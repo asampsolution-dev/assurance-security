@@ -184,7 +184,7 @@ async function siteDailyReportView(p){
   $("loadDailyReport").onclick=()=>load().catch(e=>alert(niceError(e)));return;
  }
  const guardsSnap=await db.ref("users").once("value"),users=guardsSnap.val()||{};
- const guards=Object.entries(users).filter(([uid,u])=>u&&u.role==="Security Guard"&&(u.assignedSites||[]).includes(assigned[0].id)||u&&u.role==="Security Guard"&&u.siteId===assigned[0].id);
+ const guards=Object.entries(users).filter(([uid,u])=>u&&u.role==="Security Guard"&&(((u.assignedSites||[]).includes(assigned[0].id))||u.siteId===assigned[0].id));
  p.innerHTML=`<div class="card"><h3>Daily Site Attendance & Labour Report</h3><p class="muted">Submit the attendance for the guards at your assigned site. Admin can view this report.</p><label>Site</label><select id="dailySite">${siteOptions(assigned)}</select><label>Report Date</label><input type="date" id="dailyDate" value="${new Date().toLocaleDateString('en-CA')}"><div id="guardAttendanceInputs"></div><div class="card" style="margin-top:12px"><h4>Reliever / Extra Labour</h4><p class="muted">Add a reliever or extra worker if someone is absent or additional manpower is needed.</p><div id="relieverRows"></div><button class="btn gold" type="button" id="addReliever">+ Add Reliever / Labour</button></div><label>Site Remarks</label><textarea id="dailyRemarks" placeholder="Optional daily site update"></textarea><button class="btn" id="submitDailySiteReport">Submit Daily Report</button><p class="muted" id="dailyReportStatus"></p></div>`;
  const renderGuards=async()=>{let sid=$("dailySite").value;let list=Object.entries(users).filter(([uid,u])=>u&&u.role==="Security Guard"&&(((u.assignedSites||[]).includes(sid))||u.siteId===sid));$("guardAttendanceInputs").innerHTML=`<h4>Assigned Guards (${list.length})</h4>`+(list.length?list.map(([uid,u])=>`<div class="row" style="align-items:center;border-bottom:1px solid #eee;padding:8px 0"><span style="flex:1">${esc(u.name||u.email||uid)}</span><select class="guardDailyStatus" data-uid="${esc(uid)}"><option value="Present">Present</option><option value="Absent">Absent</option><option value="Weekly Off">Weekly Off</option></select></div>`).join(""):'<p>No guards are assigned to this site in staff records.</p>')};
  let relievers=[];const renderRelievers=()=>{$("relieverRows").innerHTML=relievers.map((r,i)=>`<div class="card"><label>Reliever / Labour Name</label><input data-relief="name" data-i="${i}" value="${esc(r.name)}" placeholder="Worker name"><label>Replacing absent guard (optional)</label><select data-relief="replacing" data-i="${i}"><option value="">Select guard</option>${Object.entries(users).filter(([uid,u])=>u&&u.role==="Security Guard").map(([uid,u])=>`<option value="${esc(uid)}" ${r.replacing===uid?"selected":""}>${esc(u.name||u.email||uid)}</option>`).join("")}</select><label>Number of days</label><input type="number" min="1" step="1" data-relief="days" data-i="${i}" value="${esc(r.days||1)}"><label>Note (optional)</label><input data-relief="note" data-i="${i}" value="${esc(r.note)}" placeholder="Reason / shift"><button class="btn red" type="button" data-remove-relief="${i}">Remove</button></div>`).join("");$("relieverRows").querySelectorAll("[data-relief]").forEach(el=>el.onchange=()=>{relievers[Number(el.dataset.i)][el.dataset.relief]=el.value});$("relieverRows").querySelectorAll("[data-remove-relief]").forEach(el=>el.onclick=()=>{relievers.splice(Number(el.dataset.removeRelief),1);renderRelievers()})};
@@ -273,10 +273,10 @@ async function staffForm(p){
  <button class="btn" id="createStaff">Create Login</button><p id="staffMsg" class="muted"></p></div>
  <div class="card"><h3>Change / Transfer Staff Duty</h3>
  <label>Select Staff Member</label><select id="assignStaff"><option value="">Choose staff</option></select>
- <label>Search new site</label><input id="siteSearchAssign" placeholder="Search site name or Protection Number…">
- <label>Select Site</label><select id="assignSite"><option value="">Choose site</option>${siteOptions(sites)}</select>
+ <label>Search sites by name or Protection Number</label><input id="siteSearchAssign" placeholder="Type site name or number…">
+ <label>Select one or more sites</label><div id="assignSiteChoices" style="max-height:220px;overflow:auto;border:1px solid #cbd5e1;border-radius:8px;padding:10px">${sites.map(x=>`<label class="assignSiteChoiceRow" style="display:flex;align-items:center;gap:8px;font-weight:normal;margin:7px 0"><input type="checkbox" class="assignSiteChoice" value="${esc(x.id)}" style="width:auto">${esc(x.name)} — ${esc(x.code||"")}</label>`).join("")||"No sites created yet."}</div>
  <div class="row"><div><label>Duty Start Date</label><input type="date" id="assignStart"></div><div><label>Duty End Date (optional)</label><input type="date" id="assignEnd"></div></div>
- <button class="btn" id="saveAssignment">Save Duty Assignment</button><p class="muted">A transfer closes the previous active assignment and adds a dated history entry.</p><p id="assignMsg" class="muted"></p></div>
+ <button class="btn" id="saveAssignment">Save Duty Assignment</button><p class="muted">Selected sites are assigned together. Existing active assignments are closed and dated history entries are created for each selected site.</p><p id="assignMsg" class="muted"></p></div>
  <div class="card"><h3>Staff Duty History</h3><label>Choose staff to view history</label><select id="historyStaff"><option value="">Choose staff</option></select><div id="dutyHistory">Select a staff member.</div></div>
  <div class="card"><h3>Staff Accounts</h3><div id="staffList">Loading staff…</div></div>`;
  const userSnap=await db.ref("users").once("value"),userMap=userSnap.val()||{};
@@ -306,20 +306,22 @@ async function staffForm(p){
   $("assignStaff").innerHTML=opts;$("historyStaff").innerHTML=opts;
  }
  $("saveAssignment").onclick=async()=>{
-  const uid=$("assignStaff").value,siteId=$("assignSite").value,startDate=$("assignStart").value,endDate=$("assignEnd").value;
-  if(!uid||!siteId||!startDate)return $("assignMsg").textContent="Select staff, site and duty start date.";
+  const uid=$("assignStaff").value,startDate=$("assignStart").value,endDate=$("assignEnd").value;
+  const selectedSites=[...document.querySelectorAll(".assignSiteChoice:checked")].map(x=>x.value);
+  if(!uid||!selectedSites.length||!startDate)return $("assignMsg").textContent="Select staff, at least one site and duty start date.";
   if(endDate&&endDate<startDate)return $("assignMsg").textContent="End date cannot be before start date.";
   try{
    const uref=db.ref("users/"+uid),snap=await uref.once("value"),u=snap.val();if(!u)throw new Error("Staff profile not found.");
    const histRef=db.ref("dutyAssignments/"+uid),hist=await histRef.once("value"),entries=hist.val()||{};
    const updates={};
-   Object.entries(entries).forEach(([key,item])=>{if(item&&item.active===true)updates["dutyAssignments/"+uid+"/"+key+"/active"]=false,updates["dutyAssignments/"+uid+"/"+key+"/endDate"]=new Date(new Date(startDate+"T00:00:00").getTime()-86400000).toISOString().slice(0,10)});
-   const newRef=histRef.push();updates["dutyAssignments/"+uid+"/"+newRef.key]={siteId,startDate,endDate:endDate||"",active:!endDate,assignedBy:currentUser.uid,assignedAt:firebase.database.ServerValue.TIMESTAMP};
-   let assigned=[siteId];
-   updates["users/"+uid+"/assignedSites"]=assigned;updates["users/"+uid+"/siteId"]=siteId;
-   await db.ref().update(updates);$("assignMsg").textContent="Duty assignment saved.";await loadDutyHistory(uid);await loadStaffList();
+   Object.entries(entries).forEach(([key,item])=>{if(item&&item.active===true){updates["dutyAssignments/"+uid+"/"+key+"/active"]=false;updates["dutyAssignments/"+uid+"/"+key+"/endDate"]=new Date(new Date(startDate+"T00:00:00").getTime()-86400000).toISOString().slice(0,10)}});
+   const assigned=[];
+   selectedSites.forEach(siteId=>{assigned.push(siteId);const newRef=histRef.push();updates["dutyAssignments/"+uid+"/"+newRef.key]={siteId,startDate,endDate:endDate||"",active:!endDate,assignedBy:currentUser.uid,assignedAt:firebase.database.ServerValue.TIMESTAMP}});
+   updates["users/"+uid+"/assignedSites"]=assigned;updates["users/"+uid+"/siteId"]=assigned[0]||null;
+   await db.ref().update(updates);$("assignMsg").textContent="Duty assignments saved for "+assigned.length+" site(s).";await loadDutyHistory(uid);await loadStaffList();
   }catch(e){$("assignMsg").textContent=niceError(e)}
  };
+ $("siteSearchAssign").oninput=()=>{const q=$("siteSearchAssign").value.toLowerCase().trim();document.querySelectorAll(".assignSiteChoiceRow").forEach(row=>row.style.display=row.textContent.toLowerCase().includes(q)?"flex":"none")};
  $("historyStaff").onchange=()=>loadDutyHistory($("historyStaff").value);
  await loadStaffList();
 }
