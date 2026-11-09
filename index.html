@@ -20,7 +20,7 @@
 <div class="card"><h3>Service Areas</h3><p>Kolkata · Howrah · Malda · Siliguri · Sikkim</p><h3>Contact</h3><p>Phone / WhatsApp: <a href="tel:+917890232318">+91 7890232318</a><br>Email: <a href="mailto:info@asampsolution.com">info@asampsolution.com</a><br>Address: Makhaltalla, Durgapur, Bally, Howrah, West Bengal - 711205</p></div>
 </main>
 
-<section id="loginView" class="wrap hidden"><div class="card" style="max-width:430px;margin:35px auto"><h3>Staff Portal Login</h3><label>Email</label><input id="loginEmail" type="email" autocomplete="username"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password"><p id="loginError" class="muted"></p><button class="btn" id="loginBtn">Sign In</button> <button class="btn gold" id="backBtn">Back</button><p class="muted">Login accounts are created by the company administrator.</p></div></section>
+<section id="loginView" class="wrap hidden"><div class="card" style="max-width:430px;margin:35px auto"><h3>Staff Portal Login</h3><label>Email</label><input id="loginEmail" type="email" autocomplete="username"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password"><p id="loginError" class="muted"></p><button class="btn" id="loginBtn">Sign In</button> <button class="btn gold" id="backBtn">Back</button><p class="muted">Login accounts are created by the company administrator. If sign-in fails, confirm that your email and password are registered in Firebase Authentication.</p></div></section>
 
 <section id="portal" class="wrap hidden">
 <div class="card"><div class="row" style="align-items:center"><div><h3 id="welcome">Staff Dashboard</h3><span id="roleText" class="muted"></span></div><button class="btn red" id="logoutBtn" style="flex:0 0 auto">Sign Out</button></div></div>
@@ -54,13 +54,13 @@ $("logoutBtn").onclick=()=>auth.signOut();
 function niceError(e){return e.code==="auth/invalid-credential"?"Email or password is incorrect.":e.message||"Something went wrong."}
 auth.onAuthStateChanged(async user=>{
  currentUser=user; profile=null;
- if(!user){$("portal").classList.add("hidden");$("loginView").classList.add("hidden");$("publicView").classList.remove("hidden");return}
+ if(!user){$("portal").classList.add("hidden");if($("loginEmail").value.trim()){$("publicView").classList.add("hidden");$("loginView").classList.remove("hidden")}else{$("loginView").classList.add("hidden");$("publicView").classList.remove("hidden")}return}
  try{const s=await db.ref("users/"+user.uid).once("value");profile=s.val();
- if(!profile||!profile.role){await auth.signOut();$("loginError").textContent="Your staff profile is not activated. Contact the administrator.";return}
+ if(!profile||!profile.role){$("loginError").textContent="Authentication succeeded, but this account has no staff profile in the database. Ask the administrator to activate this account.";await auth.signOut();return}
  $("publicView").classList.add("hidden");$("loginView").classList.add("hidden");$("portal").classList.remove("hidden");
  $("welcome").textContent="Welcome, "+(profile.name||user.email);$("roleText").textContent=profile.role;
  renderTabs();showTab("overview");
- }catch(e){alert("Could not load staff profile: "+niceError(e));await auth.signOut()}
+  }catch(e){$("loginError").textContent="Could not load your staff profile: "+niceError(e);await auth.signOut()}
 });
 function allowedTabs(){let base=["overview","attendance","complaints"];if(profile.role==="Admin")return [...base,"sites","staff","allrecords"];if(["Manager","Operating Officer","Site In-charge"].includes(profile.role))return [...base,"allrecords"];return base}
 const labels={overview:"Overview",attendance:"Attendance",complaints:"Complaints",sites:"Manage Sites",staff:"Manage Staff",allrecords:"Records"};
