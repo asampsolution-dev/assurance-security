@@ -127,7 +127,7 @@ async function loadAdminDashboard(){
    const rows=guards.map(g=>{
     const ev=latestByGuard[g.uid], site=ev?siteMap[ev.siteId]:null;
     const status=ev?(ev.action==="CHECK_IN"?"Present / Checked In":"Checked Out"):"Absent";
-    const gps=ev&&ev.gps?`GPS captured (±${Math.round(ev.gps.accuracy||0)} m)`:"GPS not captured";
+    const gps=ev&&ev.gps?`${ev.geofence||"GPS captured"}; ${Math.round(ev.distanceMeters||0)} m from site (accuracy ±${Math.round(ev.gps.accuracy||0)} m)`:"GPS not captured";
     const time=ev&&ev.timestamp?new Date(ev.timestamp).toLocaleTimeString():"—";
     return `<tr><td>${esc(g.name||g.email||g.uid)}</td><td>${esc(site?site.name:(g.assignedSites||[]).map(id=>siteMap[id]?.name||id).join(", ")||"Not assigned")}</td><td>${status}</td><td>${time}</td><td>${gps}</td></tr>`;
    });
@@ -157,11 +157,32 @@ async function loadAdminDashboard(){
 
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 async function getSites(){let s=await db.ref("sites").once("value");let v=s.val()||{};return Object.entries(v).map(([id,x])=>({id,...x}))}
+function distanceMeters(a,b){
+ const rad=x=>x*Math.PI/180,R=6371000;
+ const dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng);
+ const q=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;
+ return 2*R*Math.asin(Math.sqrt(q));
+}
+function getGps(){
+ return new Promise((resolve,reject)=>{
+  if(!navigator.geolocation)return reject(new Error("GPS is not available in this browser."));
+  navigator.geolocation.getCurrentPosition(pos=>resolve({lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy}),reject,{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+ });
+}
+
 function siteOptions(sites){let seen=new Set();return sites.filter(s=>{let k=String(s.code||"").trim().toLowerCase()||String(s.name||"").trim().toLowerCase();if(seen.has(k))return false;seen.add(k);return true}).map(s=>`<option value="${esc(s.id)}">${esc(s.name)} (${esc(s.code||"")})</option>`).join("")}
-async function attendanceForm(p){let sites=await getSites();let assigned=profile.role==="Admin"?sites:sites.filter(s=>(profile.assignedSites||[]).includes(s.id));p.innerHTML=`<div class="card"><h3>Attendance Entry</h3><label>Site</label><select id="attSite">${siteOptions(assigned)}</select><label>Shift</label><select id="attShift"><option>Day Shift</option><option>Night Shift</option><option>Field Inspection</option></select><label>Remark</label><textarea id="attRemark" placeholder="Optional note"></textarea><button class="btn" id="checkIn">Check In</button> <button class="btn gold" id="checkOut">Check Out</button><p class="muted">Location permission is requested at submission. Browser GPS is recorded as supporting information, not tamper-proof proof of presence.</p></div>`;
- const submit=async action=>{let site=$("attSite").value;if(!site)return alert("No site assigned.");let gps=null;try{gps=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(x=>res({lat:x.coords.latitude,lng:x.coords.longitude,accuracy:x.coords.accuracy}),rej,{enableHighAccuracy:true,timeout:12000}))}catch(_){}
- let record={uid:currentUser.uid,name:profile.name||currentUser.email,role:profile.role,siteId:site,shift:$("attShift").value,action,remark:$("attRemark").value.trim(),timestamp:firebase.database.ServerValue.TIMESTAMP,gps};
- try{await db.ref("attendance").push(record);alert(action+" recorded.")}catch(e){alert(niceError(e))}};
+async function attendanceForm(p){
+ let sites=await getSites(),assigned=profile.role==="Admin"?sites:sites.filter(s=>(profile.assignedSites||[]).includes(s.id)||s.inchargeId===currentUser.uid);
+ p.innerHTML=`<div class="card"><h3>Attendance Entry</h3><label>Site</label><select id="attSite">${siteOptions(assigned)}</select><label>Shift</label><select id="attShift"><option>Day Shift</option><option>Night Shift</option><option>Field Inspection</option></select><label>Remark</label><textarea id="attRemark" placeholder="Optional note"></textarea><button class="btn" id="checkIn">Check In</button> <button class="btn gold" id="checkOut">Check Out</button><p class="muted">GPS is checked against the site's saved 50-metre boundary. Keep this page open and location enabled during duty monitoring.</p><p id="gpsStatus" class="muted"></p></div>`;
+ const submit=async action=>{
+  let site=sites.find(x=>x.id===$("attSite").value);if(!site)return alert("No assigned site selected.");
+  let gps;try{gps=await getGps()}catch(e){return alert("GPS permission/location is required: "+e.message)}
+  if(site.lat==null||site.lng==null)return alert("This site has no GPS point yet. Admin must capture the site GPS from Manage Sites.");
+  let distance=distanceMeters({lat:site.lat,lng:site.lng},{lat:gps.lat,lng:gps.lng});
+  if(distance>50)return alert(`You are about ${Math.round(distance)} metres from this site. Attendance is allowed only within 50 metres.`);
+  let record={uid:currentUser.uid,name:profile.name||currentUser.email,role:profile.role,siteId:site.id,shift:$("attShift").value,action,remark:$("attRemark").value.trim(),timestamp:firebase.database.ServerValue.TIMESTAMP,gps,distanceMeters:Math.round(distance),geofence:"INSIDE_50M"};
+  try{await db.ref("attendance").push(record);$("gpsStatus").textContent=`${action} saved. GPS distance: ${Math.round(distance)} m (inside 50 m).`;alert(action+" recorded.")}catch(e){alert(niceError(e))}
+ };
  $("checkIn").onclick=()=>submit("CHECK_IN");$("checkOut").onclick=()=>submit("CHECK_OUT");
 }
 async function complaintForm(p){let sites=await getSites();let assigned=profile.role==="Admin"?sites:sites.filter(s=>(profile.assignedSites||[]).includes(s.id));p.innerHTML=`<div class="card"><h3>Submit a Complaint</h3><label>Site</label><select id="cmpSite">${siteOptions(assigned)}</select><label>Complaint Details</label><textarea id="cmpText" required></textarea><label>Photo (optional)</label><input id="cmpPhoto" type="file" accept="image/*" capture="environment"><button class="btn red" id="sendComplaint">Submit Complaint</button></div>`;
@@ -170,28 +191,27 @@ async function complaintForm(p){let sites=await getSites();let assigned=profile.
  }catch(e){alert(niceError(e))}};
 }
 async function siteForm(p){
- let sites=await getSites();
- let usersSnap=await db.ref("users").once("value");
- let users=usersSnap.val()||{};
+ let usersSnap=await db.ref("users").once("value"),users=usersSnap.val()||{};
  let incharges=Object.entries(users).filter(([uid,u])=>u&&u.role==="Site In-charge");
  p.innerHTML=`<div class="card"><h3>Add Site</h3>
  <label>Site Name</label><input id="siteName" placeholder="Enter site name">
  <label>Protection Number / Site Code</label><input id="siteCode" placeholder="Enter unique protection number">
  <label>Site Address</label><textarea id="siteAddress" placeholder="Enter complete site address"></textarea>
  <label>Site In-charge</label><select id="siteIncharge"><option value="">Select Site In-charge</option>${incharges.map(([uid,u])=>`<option value="${esc(uid)}">${esc(u.name||u.email||uid)}</option>`).join("")}</select>
+ <button class="btn gold" id="captureSiteGps" type="button">Capture Site GPS Location (50 m Geofence)</button><p id="siteGpsMsg" class="muted">Stand at the actual site and capture its location. Coordinates are saved automatically; you do not need to type them.</p>
  <button class="btn" id="addSite">Save Site</button><p class="muted">Each site name and protection number must be unique.</p></div>
  <div class="card" id="siteList">Loading sites…</div>`;
+ let capturedGps=null;
+ $("captureSiteGps").onclick=async()=>{try{capturedGps=await getGps();$("siteGpsMsg").textContent=`Site location captured (GPS accuracy ±${Math.round(capturedGps.accuracy)} m).`; }catch(e){$("siteGpsMsg").textContent="Could not capture GPS: "+e.message}};
  $("addSite").onclick=async()=>{
   let name=$("siteName").value.trim(),code=$("siteCode").value.trim(),address=$("siteAddress").value.trim(),inchargeId=$("siteIncharge").value;
   if(!name||!code||!address||!inchargeId)return alert("Enter site name, protection number, address and select a Site In-charge.");
-  let normalizedName=name.toLowerCase().replace(/\s+/g," ");
-  let normalizedCode=code.toLowerCase().replace(/\s+/g,"");
+  let normalizedName=name.toLowerCase().replace(/\s+/g," "),normalizedCode=code.toLowerCase().replace(/\s+/g,"");
   let latest=await getSites();
-  let duplicate=latest.some(x=>(String(x.name||"").toLowerCase().replace(/\s+/g," ")===normalizedName)||(String(x.code||"").toLowerCase().replace(/\s+/g,"")===normalizedCode));
-  if(duplicate)return alert("A site with this name or protection number already exists. Please use a different one.");
+  if(latest.some(x=>(String(x.name||"").toLowerCase().replace(/\s+/g," ")===normalizedName)||(String(x.code||"").toLowerCase().replace(/\s+/g,"")===normalizedCode)))return alert("A site with this name or protection number already exists.");
   try{
-   await db.ref("sites").push({name,code,address,inchargeId,inchargeName:users[inchargeId].name||users[inchargeId].email||"",createdAt:firebase.database.ServerValue.TIMESTAMP});
-   $("siteName").value="";$("siteCode").value="";$("siteAddress").value="";$("siteIncharge").value="";
+   await db.ref("sites").push({name,code,address,inchargeId,inchargeName:users[inchargeId].name||users[inchargeId].email||"",lat:capturedGps?.lat??null,lng:capturedGps?.lng??null,geofenceRadius:50,createdAt:firebase.database.ServerValue.TIMESTAMP});
+   $("siteName").value="";$("siteCode").value="";$("siteAddress").value="";$("siteIncharge").value="";capturedGps=null;$("siteGpsMsg").textContent="No site GPS captured yet.";
    await loadSiteList();
   }catch(e){alert(niceError(e))}
  };
@@ -204,57 +224,92 @@ async function loadSiteList(){
   let key=String(x.code||"").trim().toLowerCase()||String(x.name||"").trim().toLowerCase();
   if(seen.has(key))continue;seen.add(key);unique.push(x);
  }
- $("siteList").innerHTML="<h3>Current Sites</h3>"+(unique.length?unique.map(x=>`<div style="padding:10px 0;border-bottom:1px solid #e2e8f0"><b>${esc(x.code||"")}</b> — ${esc(x.name||"")}<p class="muted">${esc(x.address||"Address not added")}</p><p class="muted">Site In-charge: ${esc(x.inchargeName||"Not assigned")}</p><button class="btn red" data-delete-site="${esc(x.id)}">Delete Site</button></div>`).join(""):"<p>No sites added yet.</p>");
- $("siteList").querySelectorAll("[data-delete-site]").forEach(b=>b.onclick=()=>deleteSite(b.dataset.deleteSite));
-}
-async function deleteSite(siteId){
- const site=(await db.ref("sites/"+siteId).once("value")).val();if(!site)return alert("Site not found.");
- if(!confirm(`Delete site "${site.name||site.code||siteId}"? Staff assignments will be cleared; historical attendance and complaints will remain.`))return;
- try{const snap=await db.ref("users").once("value"),users=snap.val()||{},updates={};
- Object.entries(users).forEach(([uid,u])=>{if(u&&Array.isArray(u.assignedSites)&&u.assignedSites.includes(siteId))updates["users/"+uid+"/assignedSites"]=u.assignedSites.filter(id=>id!==siteId);if(u&&u.siteId===siteId)updates["users/"+uid+"/siteId"]=null;});
- updates["sites/"+siteId]=null;await db.ref().update(updates);await loadSiteList();alert("Site deleted.");
- }catch(e){alert("Could not delete site: "+niceError(e))}
+ $("siteList").innerHTML="<h3>Current Sites</h3>"+(unique.length?unique.map(x=>`<div style="padding:10px 0;border-bottom:1px solid #e2e8f0"><b>${esc(x.code||"")}</b> — ${esc(x.name||"")}<p class="muted">${esc(x.address||"Address not added")}</p><p class="muted">Site In-charge: ${esc(x.inchargeName||"Not assigned")}</p></div>`).join(""):"<p>No sites added yet.</p>");
 }
 async function staffForm(p){
- p.innerHTML=`<div class="card"><h3>Create Staff Login</h3><div class="notice">Create a Firebase login for each staff member. Passwords are not displayed after creation.</div><label>Full Name</label><input id="newName"><label>Email (login ID)</label><input id="newEmail" type="email"><label>Temporary Password (minimum 6 characters)</label><input id="newPass" type="password"><label>Role</label><select id="newRole"><option>Manager</option><option>Operating Officer</option><option>Site In-charge</option><option>Security Guard</option></select><label>Assigned Site</label><select id="newSite"><option value="">No site assigned</option></select><button class="btn" id="createStaff">Create Login</button><p id="staffMsg" class="muted"></p></div><div class="card"><h3>Staff Accounts</h3><div id="staffList">Loading staff…</div></div>`;
- const sites=await getSites();$("newSite").innerHTML='<option value="">No site assigned</option>'+sites.map(x=>`<option value="${esc(x.id)}">${esc(x.name)} (${esc(x.code||"")})</option>`).join("");
- $("createStaff").onclick=async()=>{let name=$("newName").value.trim(),email=$("newEmail").value.trim(),pass=$("newPass").value,role=$("newRole").value,siteId=$("newSite").value,assignedSites=siteId?[siteId]:[];
- if(!name||!email||pass.length<6)return $("staffMsg").textContent="Enter name, valid email and password of at least 6 characters.";
- try{let secondary;try{secondary=firebase.app("staffCreator")}catch(_){secondary=firebase.initializeApp(firebaseConfig,"staffCreator")}
- const cred=await secondary.auth().createUserWithEmailAndPassword(email,pass);
- await db.ref("users/"+cred.user.uid).set({name,email,role,assignedSites,siteId:siteId||null,createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:currentUser.uid});
- await secondary.auth().signOut();await secondary.delete();$("staffMsg").textContent="Staff login created successfully.";
- ["newName","newEmail","newPass"].forEach(id=>$(id).value="");$("newSite").value="";await loadStaffList();
- }catch(e){$("staffMsg").textContent=niceError(e);try{await firebase.app("staffCreator").delete()}catch(_){}}};
+ const sites=await getSites();
+ const siteChoices=sites.map(x=>`<label style="display:flex;align-items:center;gap:8px;font-weight:normal;margin:7px 0"><input type="checkbox" class="staffSiteChoice" value="${esc(x.id)}" style="width:auto">${esc(x.name)} — ${esc(x.code||"")}</label>`).join("");
+ p.innerHTML=`<div class="card"><h3>Create Staff Login</h3><div class="notice">Create login details for the employee. Do not reuse passwords.</div>
+ <label>Full Name</label><input id="newName">
+ <label>Email (login ID)</label><input id="newEmail" type="email">
+ <label>Temporary Password (minimum 6 characters)</label><input id="newPass" type="password">
+ <label>Role</label><select id="newRole"><option>Manager</option><option>Operating Officer</option><option>Site In-charge</option><option>Supervisor</option><option>Security Guard</option></select>
+ <label>Designation / Staff Type</label><select id="newDesignation"><option>Security Guard</option><option>Supervisor</option><option>Site In-charge</option><option>Field Officer</option><option>Other</option></select>
+ <label>Initial Duty Start Date</label><input type="date" id="newDutyStart"><label>Search site by name or Protection Number</label><input id="siteSearchCreate" placeholder="Type site name or number…">
+ <div id="staffSiteChoices" style="max-height:220px;overflow:auto;border:1px solid #cbd5e1;border-radius:8px;padding:10px">${siteChoices||"No sites created yet."}</div>
+ <button class="btn" id="createStaff">Create Login</button><p id="staffMsg" class="muted"></p></div>
+ <div class="card"><h3>Change / Transfer Staff Duty</h3>
+ <label>Select Staff Member</label><select id="assignStaff"><option value="">Choose staff</option></select>
+ <label>Search new site</label><input id="siteSearchAssign" placeholder="Search site name or Protection Number…">
+ <label>Select Site</label><select id="assignSite"><option value="">Choose site</option>${siteOptions(sites)}</select>
+ <div class="row"><div><label>Duty Start Date</label><input type="date" id="assignStart"></div><div><label>Duty End Date (optional)</label><input type="date" id="assignEnd"></div></div>
+ <button class="btn" id="saveAssignment">Save Duty Assignment</button><p class="muted">A transfer closes the previous active assignment and adds a dated history entry.</p><p id="assignMsg" class="muted"></p></div>
+ <div class="card"><h3>Staff Duty History</h3><label>Choose staff to view history</label><select id="historyStaff"><option value="">Choose staff</option></select><div id="dutyHistory">Select a staff member.</div></div>
+ <div class="card"><h3>Staff Accounts</h3><div id="staffList">Loading staff…</div></div>`;
+ const userSnap=await db.ref("users").once("value"),userMap=userSnap.val()||{};
+ const staff=Object.entries(userMap).filter(([uid,u])=>u&&u.role&&u.role!=="Admin");
+ const staffOpts='<option value="">Choose staff</option>'+staff.map(([uid,u])=>`<option value="${esc(uid)}">${esc(u.name||u.email||uid)} (${esc(u.role)})</option>`).join("");
+ $("assignStaff").innerHTML=staffOpts;$("historyStaff").innerHTML=staffOpts;
+ $("siteSearchCreate").oninput=()=>{let q=$("siteSearchCreate").value.toLowerCase();document.querySelectorAll("#staffSiteChoices label").forEach(l=>l.style.display=l.textContent.toLowerCase().includes(q)?"flex":"none")};
+ $("siteSearchAssign").oninput=()=>{let q=$("siteSearchAssign").value.toLowerCase();[...$("assignSite").options].forEach((o,i)=>{if(i)o.hidden=!o.text.toLowerCase().includes(q)})};
+ $("createStaff").onclick=async()=>{
+  let name=$("newName").value.trim(),email=$("newEmail").value.trim(),pass=$("newPass").value,role=$("newRole").value,designation=$("newDesignation").value;
+  let assignedSites=[...document.querySelectorAll(".staffSiteChoice:checked")].map(x=>x.value),initialStart=$("newDutyStart").value;
+  if(!name||!email||pass.length<6)return $("staffMsg").textContent="Enter name, valid email and password of at least 6 characters.";
+  try{
+   let secondary;try{secondary=firebase.app("staffCreator")}catch(_){secondary=firebase.initializeApp(firebaseConfig,"staffCreator")}
+   const cred=await secondary.auth().createUserWithEmailAndPassword(email,pass);
+   await db.ref("users/"+cred.user.uid).set({name,email,role,designation,assignedSites,siteId:assignedSites[0]||null,createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:currentUser.uid});
+   if(assignedSites.length){const h={};assignedSites.forEach(siteId=>{const ref=db.ref("dutyAssignments/"+cred.user.uid).push();h[ref.key]={siteId,startDate:initialStart||new Date().toISOString().slice(0,10),endDate:"",active:true,assignedBy:currentUser.uid,assignedAt:firebase.database.ServerValue.TIMESTAMP}});await db.ref("dutyAssignments/"+cred.user.uid).update(h)}
+   await secondary.auth().signOut();await secondary.delete();
+   $("staffMsg").textContent="Staff login created successfully.";
+   ["newName","newEmail","newPass","newDutyStart"].forEach(id=>$(id).value="");document.querySelectorAll(".staffSiteChoice").forEach(x=>x.checked=false);
+   await refreshStaffSelectors();await loadStaffList();
+  }catch(e){$("staffMsg").textContent=niceError(e);try{await firebase.app("staffCreator").delete()}catch(_){}}
+ };
+ async function refreshStaffSelectors(){
+  const snap=await db.ref("users").once("value"),u=snap.val()||{};
+  const opts='<option value="">Choose staff</option>'+Object.entries(u).filter(([id,x])=>x&&x.role&&x.role!=="Admin").map(([id,x])=>`<option value="${esc(id)}">${esc(x.name||x.email||id)} (${esc(x.role)})</option>`).join("");
+  $("assignStaff").innerHTML=opts;$("historyStaff").innerHTML=opts;
+ }
+ $("saveAssignment").onclick=async()=>{
+  const uid=$("assignStaff").value,siteId=$("assignSite").value,startDate=$("assignStart").value,endDate=$("assignEnd").value;
+  if(!uid||!siteId||!startDate)return $("assignMsg").textContent="Select staff, site and duty start date.";
+  if(endDate&&endDate<startDate)return $("assignMsg").textContent="End date cannot be before start date.";
+  try{
+   const uref=db.ref("users/"+uid),snap=await uref.once("value"),u=snap.val();if(!u)throw new Error("Staff profile not found.");
+   const histRef=db.ref("dutyAssignments/"+uid),hist=await histRef.once("value"),entries=hist.val()||{};
+   const updates={};
+   Object.entries(entries).forEach(([key,item])=>{if(item&&item.active===true)updates["dutyAssignments/"+uid+"/"+key+"/active"]=false,updates["dutyAssignments/"+uid+"/"+key+"/endDate"]=new Date(new Date(startDate+"T00:00:00").getTime()-86400000).toISOString().slice(0,10)});
+   const newRef=histRef.push();updates["dutyAssignments/"+uid+"/"+newRef.key]={siteId,startDate,endDate:endDate||"",active:!endDate,assignedBy:currentUser.uid,assignedAt:firebase.database.ServerValue.TIMESTAMP};
+   let assigned=[siteId];
+   updates["users/"+uid+"/assignedSites"]=assigned;updates["users/"+uid+"/siteId"]=siteId;
+   await db.ref().update(updates);$("assignMsg").textContent="Duty assignment saved.";await loadDutyHistory(uid);await loadStaffList();
+  }catch(e){$("assignMsg").textContent=niceError(e)}
+ };
+ $("historyStaff").onchange=()=>loadDutyHistory($("historyStaff").value);
  await loadStaffList();
 }
+async function loadDutyHistory(uid){
+ if(!uid){$("dutyHistory").textContent="Select a staff member.";return}
+ try{
+  const [h,u,s,a]=await Promise.all([db.ref("dutyAssignments/"+uid).once("value"),db.ref("users/"+uid).once("value"),getSites(),db.ref("attendance").orderByChild("uid").equalTo(uid).once("value")]);
+  const person=u.val()||{},map=Object.fromEntries(s.map(x=>[x.id,x.name]));
+  const rows=Object.values(h.val()||{}).sort((a,b)=>(a.startDate||"").localeCompare(b.startDate||""));
+  const events=Object.values(a.val()||{}).filter(e=>e&&e.action==="CHECK_IN");
+  $("dutyHistory").innerHTML=rows.length?`<p><b>${esc(person.name||person.email||"Staff")}</b> — Days Worked counts distinct dates with a CHECK IN record.</p><div class="tablewrap"><table><tr><th>Site</th><th>From</th><th>To</th><th>Status</th><th>Days Worked</th></tr>${rows.map(x=>{const days=new Set(events.filter(e=>e.siteId===x.siteId&&e.timestamp&&new Date(e.timestamp).toISOString().slice(0,10)>=(x.startDate||"0000-01-01")&&(!x.endDate||new Date(e.timestamp).toISOString().slice(0,10)<=x.endDate)).map(e=>new Date(e.timestamp).toISOString().slice(0,10))).size;return `<tr><td>${esc(map[x.siteId]||x.siteId)}</td><td>${esc(x.startDate||"—")}</td><td>${esc(x.endDate||"Present")}</td><td>${x.active?"Active":"Completed"}</td><td>${days}</td></tr>`}).join("")}</table></div>`:"No duty history saved yet.";
+ }catch(e){$("dutyHistory").textContent=niceError(e)}
+}
 async function loadStaffList(){
- const [us,ss]=await Promise.all([db.ref("users").once("value"),getSites()]),users=us.val()||{},siteMap=Object.fromEntries(ss.map(x=>[x.id,x.name]));
+ const [us,ss]=await Promise.all([db.ref("users").once("value"),getSites()]);
+ const users=us.val()||{},siteMap=Object.fromEntries(ss.map(x=>[x.id,x.name]));
  const staff=Object.entries(users).filter(([uid,u])=>u&&u.role&&u.role!=="Admin");
- $("staffList").innerHTML=staff.length?`<div class="tablewrap"><table><tr><th>Name</th><th>Role</th><th>Email</th><th>Site</th><th>Action</th></tr>${staff.map(([uid,u])=>`<tr><td>${esc(u.name||"—")}</td><td>${esc(u.role)}</td><td>${esc(u.email||"—")}</td><td>${esc((u.assignedSites||[]).map(id=>siteMap[id]||id).join(", ")||siteMap[u.siteId]||"—")}</td><td><button class="btn red" data-delete-user="${esc(uid)}">Delete Profile</button></td></tr>`).join("")}</table></div><p class="muted">Deleting a profile does not delete its Firebase Authentication login. Disable/delete that login separately in Firebase Console.</p>`:"No staff profiles found.";
- $("staffList").querySelectorAll("[data-delete-user]").forEach(b=>b.onclick=()=>deleteStaffProfile(b.dataset.deleteUser));
+ $("staffList").innerHTML=staff.length?`<div class="tablewrap"><table><tr><th>Name</th><th>Role / Designation</th><th>Email</th><th>Assigned Sites</th></tr>${staff.map(([uid,u])=>`<tr><td>${esc(u.name||"—")}</td><td>${esc(u.role)} / ${esc(u.designation||"—")}</td><td>${esc(u.email||"—")}</td><td>${esc((u.assignedSites||[]).map(id=>siteMap[id]||id).join(", ")||"—")}</td></tr>`).join("")}</table></div>`:"No staff profiles found.";
 }
-async function deleteStaffProfile(uid){
- if(uid===currentUser.uid)return alert("You cannot delete the account currently signed in.");
- const u=(await db.ref("users/"+uid).once("value")).val();if(!u)return alert("Staff profile not found.");
- if(!confirm(`Delete profile for "${u.name||u.email||uid}"? Historical attendance and complaints will remain. Authentication login will remain active.`))return;
- try{await db.ref("users/"+uid).remove();await loadStaffList();alert("Profile deleted. Remove/disable the Authentication login separately.");}catch(e){alert(niceError(e))}
-}
-async function recordsView(p){
- p.innerHTML=`<div class="card"><h3>Attendance Records</h3><div id="attendanceRows">Loading…</div></div><div class="card"><h3>Complaint Records</h3><div id="complaintRows">Loading…</div></div>`;
- try{let [a,c,sites]=await Promise.all([db.ref("attendance").limitToLast(150).once("value"),db.ref("complaints").limitToLast(150).once("value"),getSites()]);
- let siteMap=Object.fromEntries(sites.map(x=>[x.id,x.name]));
- let filter=x=>profile.role==="Admin"||profile.role==="Manager"||profile.role==="Operating Officer"||(profile.assignedSites||[]).includes(x.siteId);
- let ar=Object.entries(a.val()||{}).map(([id,x])=>({id,...x})).filter(filter).reverse(),cr=Object.entries(c.val()||{}).map(([id,x])=>({id,...x})).filter(filter).reverse();
- $("attendanceRows").innerHTML=ar.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Action</th><th>Remark</th>${profile.role==="Admin"?"<th>Delete</th>":""}</tr>${ar.map(x=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.action)}</td><td>${esc(x.remark)}</td>${profile.role==="Admin"?`<td><button class="btn red" data-delete-att="${esc(x.id)}">Delete</button></td>`:""}</tr>`).join("")}</table></div>`:"No attendance records.";
- $("complaintRows").innerHTML=cr.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Details</th><th>Photo</th>${profile.role==="Admin"?"<th>Delete</th>":""}</tr>${cr.map(x=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.details)}</td><td>${x.photoUrl?`<a href="${esc(x.photoUrl)}" target="_blank" rel="noopener">View photo</a>`:"—"}</td>${profile.role==="Admin"?`<td><button class="btn red" data-delete-cmp="${esc(x.id)}">Delete</button></td>`:""}</tr>`).join("")}</table></div>`:"No complaints.";
- if(profile.role==="Admin"){$("attendanceRows").querySelectorAll("[data-delete-att]").forEach(b=>b.onclick=()=>deleteRecord("attendance",b.dataset.deleteAtt,"attendance record"));$("complaintRows").querySelectorAll("[data-delete-cmp]").forEach(b=>b.onclick=()=>deleteRecord("complaints",b.dataset.deleteCmp,"complaint"));}
- }catch(e){$("attendanceRows").textContent=niceError(e)}
-}
-async function deleteRecord(collection,id,label){
- if(!confirm(`Permanently delete this ${label}? This cannot be undone.`))return;
- try{await db.ref(collection+"/"+id).remove();await recordsView($("panel"));alert("Record deleted.");}catch(e){alert("Could not delete: "+niceError(e))}
-}
-
+async function recordsView(p){p.innerHTML=`<div class="card"><h3>Attendance Records</h3><div id="attendanceRows">Loading…</div></div><div class="card"><h3>Complaint Records</h3><div id="complaintRows">Loading…</div></div>`;try{let [a,c,sites]=await Promise.all([db.ref("attendance").limitToLast(100).once("value"),db.ref("complaints").limitToLast(100).once("value"),getSites()]);let siteMap=Object.fromEntries(sites.map(s=>[s.id,s.name]));let filter=x=>profile.role==="Admin"||profile.role==="Manager"||profile.role==="Operating Officer"?true:(profile.assignedSites||[]).includes(x.siteId);
+ let ar=Object.values(a.val()||{}).filter(filter).reverse(),cr=Object.values(c.val()||{}).filter(filter).reverse();
+ $("attendanceRows").innerHTML=ar.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Action</th><th>Remark</th></tr>${ar.map(x=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.action)}</td><td>${esc(x.remark)}</td></tr>`).join("")}</table></div>`:"No attendance records.";
+ $("complaintRows").innerHTML=cr.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Details</th><th>Photo</th></tr>${cr.map(x=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.details)}</td><td>${x.photoUrl?`<a href="${esc(x.photoUrl)}" target="_blank" rel="noopener">View photo</a>`:"—"}</td></tr>`).join("")}</table></div>`:"No complaints.";
+ }catch(e){$("attendanceRows").textContent=niceError(e)}}
 </script>
 </body></html>
