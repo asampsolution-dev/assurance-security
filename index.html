@@ -204,17 +204,57 @@ async function loadSiteList(){
   let key=String(x.code||"").trim().toLowerCase()||String(x.name||"").trim().toLowerCase();
   if(seen.has(key))continue;seen.add(key);unique.push(x);
  }
- $("siteList").innerHTML="<h3>Current Sites</h3>"+(unique.length?unique.map(x=>`<div style="padding:10px 0;border-bottom:1px solid #e2e8f0"><b>${esc(x.code||"")}</b> — ${esc(x.name||"")}<p class="muted">${esc(x.address||"Address not added")}</p><p class="muted">Site In-charge: ${esc(x.inchargeName||"Not assigned")}</p></div>`).join(""):"<p>No sites added yet.</p>");
+ $("siteList").innerHTML="<h3>Current Sites</h3>"+(unique.length?unique.map(x=>`<div style="padding:10px 0;border-bottom:1px solid #e2e8f0"><b>${esc(x.code||"")}</b> — ${esc(x.name||"")}<p class="muted">${esc(x.address||"Address not added")}</p><p class="muted">Site In-charge: ${esc(x.inchargeName||"Not assigned")}</p><button class="btn red" data-delete-site="${esc(x.id)}">Delete Site</button></div>`).join(""):"<p>No sites added yet.</p>");
+ $("siteList").querySelectorAll("[data-delete-site]").forEach(b=>b.onclick=()=>deleteSite(b.dataset.deleteSite));
 }
-function staffForm(p){p.innerHTML=`<div class="card"><h3>Create Staff Login</h3><div class="notice">This uses Firebase Authentication. The new staff member receives the email and password you enter. Do not reuse passwords.</div><label>Full Name</label><input id="newName"><label>Email (login ID)</label><input id="newEmail" type="email"><label>Temporary Password (minimum 6 characters)</label><input id="newPass" type="password"><label>Role</label><select id="newRole"><option>Manager</option><option>Operating Officer</option><option>Site In-charge</option><option>Security Guard</option></select><label>Assigned Site IDs (comma separated; optional)</label><input id="newSites" placeholder="Paste site IDs separated by commas"><button class="btn" id="createStaff">Create Login</button><p id="staffMsg" class="muted"></p></div>`;
- $("createStaff").onclick=async()=>{let name=$("newName").value.trim(),email=$("newEmail").value.trim(),pass=$("newPass").value,role=$("newRole").value,assignedSites=$("newSites").value.split(",").map(x=>x.trim()).filter(Boolean);if(!name||!email||pass.length<6)return $("staffMsg").textContent="Enter name, valid email and password of at least 6 characters.";
- try{const secondary=firebase.initializeApp(firebaseConfig,"staffCreator");const cred=await secondary.auth().createUserWithEmailAndPassword(email,pass);await db.ref("users/"+cred.user.uid).set({name,email,role,assignedSites,createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:currentUser.uid});await secondary.auth().signOut();await secondary.delete();$("staffMsg").textContent="Staff login created successfully. Share login details securely.";["newName","newEmail","newPass","newSites"].forEach(id=>$(id).value="")}
- catch(e){$("staffMsg").textContent=niceError(e);try{await firebase.app("staffCreator").delete()}catch(_){}}};
+async function deleteSite(siteId){
+ const site=(await db.ref("sites/"+siteId).once("value")).val();if(!site)return alert("Site not found.");
+ if(!confirm(`Delete site "${site.name||site.code||siteId}"? Staff assignments will be cleared; historical attendance and complaints will remain.`))return;
+ try{const snap=await db.ref("users").once("value"),users=snap.val()||{},updates={};
+ Object.entries(users).forEach(([uid,u])=>{if(u&&Array.isArray(u.assignedSites)&&u.assignedSites.includes(siteId))updates["users/"+uid+"/assignedSites"]=u.assignedSites.filter(id=>id!==siteId);if(u&&u.siteId===siteId)updates["users/"+uid+"/siteId"]=null;});
+ updates["sites/"+siteId]=null;await db.ref().update(updates);await loadSiteList();alert("Site deleted.");
+ }catch(e){alert("Could not delete site: "+niceError(e))}
 }
-async function recordsView(p){p.innerHTML=`<div class="card"><h3>Attendance Records</h3><div id="attendanceRows">Loading…</div></div><div class="card"><h3>Complaint Records</h3><div id="complaintRows">Loading…</div></div>`;try{let [a,c,sites]=await Promise.all([db.ref("attendance").limitToLast(100).once("value"),db.ref("complaints").limitToLast(100).once("value"),getSites()]);let siteMap=Object.fromEntries(sites.map(s=>[s.id,s.name]));let filter=x=>profile.role==="Admin"||profile.role==="Manager"||profile.role==="Operating Officer"?true:(profile.assignedSites||[]).includes(x.siteId);
- let ar=Object.values(a.val()||{}).filter(filter).reverse(),cr=Object.values(c.val()||{}).filter(filter).reverse();
- $("attendanceRows").innerHTML=ar.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Action</th><th>Remark</th></tr>${ar.map(x=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.action)}</td><td>${esc(x.remark)}</td></tr>`).join("")}</table></div>`:"No attendance records.";
- $("complaintRows").innerHTML=cr.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Details</th><th>Photo</th></tr>${cr.map(x=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.details)}</td><td>${x.photoUrl?`<a href="${esc(x.photoUrl)}" target="_blank" rel="noopener">View photo</a>`:"—"}</td></tr>`).join("")}</table></div>`:"No complaints.";
- }catch(e){$("attendanceRows").textContent=niceError(e)}}
+async function staffForm(p){
+ p.innerHTML=`<div class="card"><h3>Create Staff Login</h3><div class="notice">Create a Firebase login for each staff member. Passwords are not displayed after creation.</div><label>Full Name</label><input id="newName"><label>Email (login ID)</label><input id="newEmail" type="email"><label>Temporary Password (minimum 6 characters)</label><input id="newPass" type="password"><label>Role</label><select id="newRole"><option>Manager</option><option>Operating Officer</option><option>Site In-charge</option><option>Security Guard</option></select><label>Assigned Site</label><select id="newSite"><option value="">No site assigned</option></select><button class="btn" id="createStaff">Create Login</button><p id="staffMsg" class="muted"></p></div><div class="card"><h3>Staff Accounts</h3><div id="staffList">Loading staff…</div></div>`;
+ const sites=await getSites();$("newSite").innerHTML='<option value="">No site assigned</option>'+sites.map(x=>`<option value="${esc(x.id)}">${esc(x.name)} (${esc(x.code||"")})</option>`).join("");
+ $("createStaff").onclick=async()=>{let name=$("newName").value.trim(),email=$("newEmail").value.trim(),pass=$("newPass").value,role=$("newRole").value,siteId=$("newSite").value,assignedSites=siteId?[siteId]:[];
+ if(!name||!email||pass.length<6)return $("staffMsg").textContent="Enter name, valid email and password of at least 6 characters.";
+ try{let secondary;try{secondary=firebase.app("staffCreator")}catch(_){secondary=firebase.initializeApp(firebaseConfig,"staffCreator")}
+ const cred=await secondary.auth().createUserWithEmailAndPassword(email,pass);
+ await db.ref("users/"+cred.user.uid).set({name,email,role,assignedSites,siteId:siteId||null,createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:currentUser.uid});
+ await secondary.auth().signOut();await secondary.delete();$("staffMsg").textContent="Staff login created successfully.";
+ ["newName","newEmail","newPass"].forEach(id=>$(id).value="");$("newSite").value="";await loadStaffList();
+ }catch(e){$("staffMsg").textContent=niceError(e);try{await firebase.app("staffCreator").delete()}catch(_){}}};
+ await loadStaffList();
+}
+async function loadStaffList(){
+ const [us,ss]=await Promise.all([db.ref("users").once("value"),getSites()]),users=us.val()||{},siteMap=Object.fromEntries(ss.map(x=>[x.id,x.name]));
+ const staff=Object.entries(users).filter(([uid,u])=>u&&u.role&&u.role!=="Admin");
+ $("staffList").innerHTML=staff.length?`<div class="tablewrap"><table><tr><th>Name</th><th>Role</th><th>Email</th><th>Site</th><th>Action</th></tr>${staff.map(([uid,u])=>`<tr><td>${esc(u.name||"—")}</td><td>${esc(u.role)}</td><td>${esc(u.email||"—")}</td><td>${esc((u.assignedSites||[]).map(id=>siteMap[id]||id).join(", ")||siteMap[u.siteId]||"—")}</td><td><button class="btn red" data-delete-user="${esc(uid)}">Delete Profile</button></td></tr>`).join("")}</table></div><p class="muted">Deleting a profile does not delete its Firebase Authentication login. Disable/delete that login separately in Firebase Console.</p>`:"No staff profiles found.";
+ $("staffList").querySelectorAll("[data-delete-user]").forEach(b=>b.onclick=()=>deleteStaffProfile(b.dataset.deleteUser));
+}
+async function deleteStaffProfile(uid){
+ if(uid===currentUser.uid)return alert("You cannot delete the account currently signed in.");
+ const u=(await db.ref("users/"+uid).once("value")).val();if(!u)return alert("Staff profile not found.");
+ if(!confirm(`Delete profile for "${u.name||u.email||uid}"? Historical attendance and complaints will remain. Authentication login will remain active.`))return;
+ try{await db.ref("users/"+uid).remove();await loadStaffList();alert("Profile deleted. Remove/disable the Authentication login separately.");}catch(e){alert(niceError(e))}
+}
+async function recordsView(p){
+ p.innerHTML=`<div class="card"><h3>Attendance Records</h3><div id="attendanceRows">Loading…</div></div><div class="card"><h3>Complaint Records</h3><div id="complaintRows">Loading…</div></div>`;
+ try{let [a,c,sites]=await Promise.all([db.ref("attendance").limitToLast(150).once("value"),db.ref("complaints").limitToLast(150).once("value"),getSites()]);
+ let siteMap=Object.fromEntries(sites.map(x=>[x.id,x.name]));
+ let filter=x=>profile.role==="Admin"||profile.role==="Manager"||profile.role==="Operating Officer"||(profile.assignedSites||[]).includes(x.siteId);
+ let ar=Object.entries(a.val()||{}).map(([id,x])=>({id,...x})).filter(filter).reverse(),cr=Object.entries(c.val()||{}).map(([id,x])=>({id,...x})).filter(filter).reverse();
+ $("attendanceRows").innerHTML=ar.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Action</th><th>Remark</th>${profile.role==="Admin"?"<th>Delete</th>":""}</tr>${ar.map(x=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.action)}</td><td>${esc(x.remark)}</td>${profile.role==="Admin"?`<td><button class="btn red" data-delete-att="${esc(x.id)}">Delete</button></td>`:""}</tr>`).join("")}</table></div>`:"No attendance records.";
+ $("complaintRows").innerHTML=cr.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Details</th><th>Photo</th>${profile.role==="Admin"?"<th>Delete</th>":""}</tr>${cr.map(x=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.details)}</td><td>${x.photoUrl?`<a href="${esc(x.photoUrl)}" target="_blank" rel="noopener">View photo</a>`:"—"}</td>${profile.role==="Admin"?`<td><button class="btn red" data-delete-cmp="${esc(x.id)}">Delete</button></td>`:""}</tr>`).join("")}</table></div>`:"No complaints.";
+ if(profile.role==="Admin"){$("attendanceRows").querySelectorAll("[data-delete-att]").forEach(b=>b.onclick=()=>deleteRecord("attendance",b.dataset.deleteAtt,"attendance record"));$("complaintRows").querySelectorAll("[data-delete-cmp]").forEach(b=>b.onclick=()=>deleteRecord("complaints",b.dataset.deleteCmp,"complaint"));}
+ }catch(e){$("attendanceRows").textContent=niceError(e)}
+}
+async function deleteRecord(collection,id,label){
+ if(!confirm(`Permanently delete this ${label}? This cannot be undone.`))return;
+ try{await db.ref(collection+"/"+id).remove();await recordsView($("panel"));alert("Record deleted.");}catch(e){alert("Could not delete: "+niceError(e))}
+}
+
 </script>
 </body></html>
