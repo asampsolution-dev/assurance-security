@@ -62,8 +62,8 @@ auth.onAuthStateChanged(async user=>{
  renderTabs();showTab("overview");
   }catch(e){$("loginError").textContent="Could not load your staff profile: "+niceError(e);await auth.signOut()}
 });
-function allowedTabs(){let base=["overview","attendance","complaints"];if(profile.role==="Admin")return [...base,"sites","staff","allrecords"];if(["Manager","Operating Officer","Site In-charge"].includes(profile.role))return [...base,"allrecords"];return base}
-const labels={overview:"Overview",attendance:"Attendance",complaints:"Complaints",sites:"Manage Sites",staff:"Manage Staff",allrecords:"Records"};
+function allowedTabs(){let base=["overview","attendance","complaints"];if(profile.role==="Admin")return [...base,"sites","staff","allrecords","finance"];if(["Manager","Operating Officer","Site In-charge"].includes(profile.role))return [...base,"allrecords"];return base}
+const labels={overview:"Overview",attendance:"Attendance",complaints:"Complaints",sites:"Manage Sites",staff:"Manage Staff",allrecords:"Records",finance:"Daily / Monthly Accounts"};
 function renderTabs(){$("tabs").innerHTML="";allowedTabs().forEach(t=>{let b=document.createElement("button");b.className="btn";b.textContent=labels[t];b.onclick=()=>showTab(t);$("tabs").appendChild(b)})}
 function showTab(t){activeTab=t;[...$("tabs").children].forEach((b,i)=>b.classList.toggle("active",allowedTabs()[i]===t));let p=$("panel");p.innerHTML="";
  if(t==="overview"){adminDashboard(p)}
@@ -72,6 +72,7 @@ function showTab(t){activeTab=t;[...$("tabs").children].forEach((b,i)=>b.classLi
  if(t==="sites")siteForm(p);
  if(t==="staff")staffForm(p);
  if(t==="allrecords")recordsView(p);
+ if(t==="finance")financeView(p);
 }
 
 async function adminDashboard(p){
@@ -196,7 +197,7 @@ async function siteForm(p){
  p.innerHTML=`<div class="card"><h3>Add Site</h3>
  <label>Site Name</label><input id="siteName" placeholder="Enter site name">
  <label>Protection Number / Site Code</label><input id="siteCode" placeholder="Enter unique protection number">
- <label>Site Address</label><textarea id="siteAddress" placeholder="Enter complete site address"></textarea>
+ <label>Site Address</label><textarea id="siteAddress" placeholder="Enter complete site address"></textarea>\n <label>Company Billing Rate per Guard / Day (₹)</label><input id="siteClientRate" type="number" min="0" step="0.01" placeholder="Example: 500">
  <label>Site In-charge</label><select id="siteIncharge"><option value="">Select Site In-charge</option>${incharges.map(([uid,u])=>`<option value="${esc(uid)}">${esc(u.name||u.email||uid)}</option>`).join("")}</select>
  <button class="btn gold" id="captureSiteGps" type="button">Capture Site GPS Location (50 m Geofence)</button><p id="siteGpsMsg" class="muted">Stand at the actual site and capture its location. Coordinates are saved automatically; you do not need to type them.</p>
  <button class="btn" id="addSite">Save Site</button><p class="muted">Each site name and protection number must be unique.</p></div>
@@ -204,14 +205,14 @@ async function siteForm(p){
  let capturedGps=null;
  $("captureSiteGps").onclick=async()=>{try{capturedGps=await getGps();$("siteGpsMsg").textContent=`Site location captured (GPS accuracy ±${Math.round(capturedGps.accuracy)} m).`; }catch(e){$("siteGpsMsg").textContent="Could not capture GPS: "+e.message}};
  $("addSite").onclick=async()=>{
-  let name=$("siteName").value.trim(),code=$("siteCode").value.trim(),address=$("siteAddress").value.trim(),inchargeId=$("siteIncharge").value;
+  let name=$("siteName").value.trim(),code=$("siteCode").value.trim(),address=$("siteAddress").value.trim(),inchargeId=$("siteIncharge").value,clientRatePerGuard=Number($("siteClientRate").value||0);
   if(!name||!code||!address||!inchargeId)return alert("Enter site name, protection number, address and select a Site In-charge.");
   let normalizedName=name.toLowerCase().replace(/\s+/g," "),normalizedCode=code.toLowerCase().replace(/\s+/g,"");
   let latest=await getSites();
   if(latest.some(x=>(String(x.name||"").toLowerCase().replace(/\s+/g," ")===normalizedName)||(String(x.code||"").toLowerCase().replace(/\s+/g,"")===normalizedCode)))return alert("A site with this name or protection number already exists.");
   try{
-   await db.ref("sites").push({name,code,address,inchargeId,inchargeName:users[inchargeId].name||users[inchargeId].email||"",lat:capturedGps?.lat??null,lng:capturedGps?.lng??null,geofenceRadius:50,createdAt:firebase.database.ServerValue.TIMESTAMP});
-   $("siteName").value="";$("siteCode").value="";$("siteAddress").value="";$("siteIncharge").value="";capturedGps=null;$("siteGpsMsg").textContent="No site GPS captured yet.";
+   await db.ref("sites").push({name,code,address,inchargeId,inchargeName:users[inchargeId].name||users[inchargeId].email||"",clientRatePerGuard,lat:capturedGps?.lat??null,lng:capturedGps?.lng??null,geofenceRadius:50,createdAt:firebase.database.ServerValue.TIMESTAMP});
+   $("siteName").value="";$("siteCode").value="";$("siteAddress").value="";$("siteClientRate").value="";$("siteIncharge").value="";capturedGps=null;$("siteGpsMsg").textContent="No site GPS captured yet.";
    await loadSiteList();
   }catch(e){alert(niceError(e))}
  };
@@ -219,12 +220,24 @@ async function siteForm(p){
 }
 async function loadSiteList(){
  let sites=await getSites();
- let seen=new Set(),unique=[];
- for(let x of sites){
-  let key=String(x.code||"").trim().toLowerCase()||String(x.name||"").trim().toLowerCase();
-  if(seen.has(key))continue;seen.add(key);unique.push(x);
- }
- $("siteList").innerHTML="<h3>Current Sites</h3>"+(unique.length?unique.map(x=>`<div style="padding:10px 0;border-bottom:1px solid #e2e8f0"><b>${esc(x.code||"")}</b> — ${esc(x.name||"")}<p class="muted">${esc(x.address||"Address not added")}</p><p class="muted">Site In-charge: ${esc(x.inchargeName||"Not assigned")}</p></div>`).join(""):"<p>No sites added yet.</p>");
+ $("siteList").innerHTML="<h3>Current Sites</h3>"+(sites.length?sites.map(x=>`<div style="padding:10px 0;border-bottom:1px solid #e2e8f0"><b>${esc(x.code||"")}</b> — ${esc(x.name||"")}<p class="muted">${esc(x.address||"Address not added")}</p><p class="muted">Site In-charge: ${esc(x.inchargeName||"Not assigned")}</p><button class="btn red" data-del-site="${esc(x.id)}" type="button">Delete Site</button></div>`).join(""):"<p>No sites added yet.</p>");
+ $("siteList").querySelectorAll("[data-del-site]").forEach(b=>b.onclick=()=>deleteSite(b.dataset.delSite));
+}
+async function deleteSite(siteId){
+ const snap=await db.ref("sites/"+siteId).once("value"),site=snap.val();
+ if(!site)return alert("Site not found.");
+ if(!confirm(`Delete ${site.name||site.code||"this site"}? The site will be removed from staff assignments and duty history. Attendance and complaint records will be kept.`))return;
+ try{
+  const [usersSnap,histSnap]=await Promise.all([db.ref("users").once("value"),db.ref("dutyAssignments").once("value")]);
+  const updates={}; updates["sites/"+siteId]=null;
+  Object.entries(usersSnap.val()||{}).forEach(([uid,u])=>{
+   if(!u)return;
+   if(Array.isArray(u.assignedSites)&&u.assignedSites.includes(siteId))updates[`users/${uid}/assignedSites`]=u.assignedSites.filter(id=>id!==siteId);
+   if(u.siteId===siteId)updates[`users/${uid}/siteId`]=null;
+  });
+  Object.entries(histSnap.val()||{}).forEach(([uid,items])=>Object.entries(items||{}).forEach(([key,item])=>{if(item&&item.siteId===siteId)updates[`dutyAssignments/${uid}/${key}`]=null;}));
+  await db.ref().update(updates); await loadSiteList(); alert("Site deleted. Historical attendance and complaints were kept.");
+ }catch(e){alert("Delete failed: "+niceError(e)+". Check Firebase Database Rules for Admin write permission.")}
 }
 async function staffForm(p){
  const sites=await getSites();
@@ -235,7 +248,7 @@ async function staffForm(p){
  <label>Temporary Password (minimum 6 characters)</label><input id="newPass" type="password">
  <label>Role</label><select id="newRole"><option>Manager</option><option>Operating Officer</option><option>Site In-charge</option><option>Supervisor</option><option>Security Guard</option></select>
  <label>Designation / Staff Type</label><select id="newDesignation"><option>Security Guard</option><option>Supervisor</option><option>Site In-charge</option><option>Field Officer</option><option>Other</option></select>
- <label>Initial Duty Start Date</label><input type="date" id="newDutyStart"><label>Search site by name or Protection Number</label><input id="siteSearchCreate" placeholder="Type site name or number…">
+ <label>Daily Wage Payable to this Worker (₹)</label><input type="number" min="0" step="0.01" id="newDailyWage" placeholder="Example: 450">\n <label>Initial Duty Start Date</label><input type="date" id="newDutyStart"><label>Search site by name or Protection Number</label><input id="siteSearchCreate" placeholder="Type site name or number…">
  <div id="staffSiteChoices" style="max-height:220px;overflow:auto;border:1px solid #cbd5e1;border-radius:8px;padding:10px">${siteChoices||"No sites created yet."}</div>
  <button class="btn" id="createStaff">Create Login</button><p id="staffMsg" class="muted"></p></div>
  <div class="card"><h3>Change / Transfer Staff Duty</h3>
@@ -259,11 +272,11 @@ async function staffForm(p){
   try{
    let secondary;try{secondary=firebase.app("staffCreator")}catch(_){secondary=firebase.initializeApp(firebaseConfig,"staffCreator")}
    const cred=await secondary.auth().createUserWithEmailAndPassword(email,pass);
-   await db.ref("users/"+cred.user.uid).set({name,email,role,designation,assignedSites,siteId:assignedSites[0]||null,createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:currentUser.uid});
+   await db.ref("users/"+cred.user.uid).set({name,email,role,designation,dailyWage:Number($("newDailyWage").value||0),assignedSites,siteId:assignedSites[0]||null,createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:currentUser.uid});
    if(assignedSites.length){const h={};assignedSites.forEach(siteId=>{const ref=db.ref("dutyAssignments/"+cred.user.uid).push();h[ref.key]={siteId,startDate:initialStart||new Date().toISOString().slice(0,10),endDate:"",active:true,assignedBy:currentUser.uid,assignedAt:firebase.database.ServerValue.TIMESTAMP}});await db.ref("dutyAssignments/"+cred.user.uid).update(h)}
    await secondary.auth().signOut();await secondary.delete();
    $("staffMsg").textContent="Staff login created successfully.";
-   ["newName","newEmail","newPass","newDutyStart"].forEach(id=>$(id).value="");document.querySelectorAll(".staffSiteChoice").forEach(x=>x.checked=false);
+   ["newName","newEmail","newPass","newDutyStart","newDailyWage"].forEach(id=>$(id).value="");document.querySelectorAll(".staffSiteChoice").forEach(x=>x.checked=false);
    await refreshStaffSelectors();await loadStaffList();
   }catch(e){$("staffMsg").textContent=niceError(e);try{await firebase.app("staffCreator").delete()}catch(_){}}
  };
@@ -304,12 +317,96 @@ async function loadStaffList(){
  const [us,ss]=await Promise.all([db.ref("users").once("value"),getSites()]);
  const users=us.val()||{},siteMap=Object.fromEntries(ss.map(x=>[x.id,x.name]));
  const staff=Object.entries(users).filter(([uid,u])=>u&&u.role&&u.role!=="Admin");
- $("staffList").innerHTML=staff.length?`<div class="tablewrap"><table><tr><th>Name</th><th>Role / Designation</th><th>Email</th><th>Assigned Sites</th></tr>${staff.map(([uid,u])=>`<tr><td>${esc(u.name||"—")}</td><td>${esc(u.role)} / ${esc(u.designation||"—")}</td><td>${esc(u.email||"—")}</td><td>${esc((u.assignedSites||[]).map(id=>siteMap[id]||id).join(", ")||"—")}</td></tr>`).join("")}</table></div>`:"No staff profiles found.";
+ $("staffList").innerHTML=staff.length?`<div class="tablewrap"><table><tr><th>Name</th><th>Role / Designation</th><th>Email</th><th>Assigned Sites</th><th>Action</th></tr>${staff.map(([uid,u])=>`<tr><td>${esc(u.name||"—")}</td><td>${esc(u.role)} / ${esc(u.designation||"—")}</td><td>${esc(u.email||"—")}</td><td>${esc((u.assignedSites||[]).map(id=>siteMap[id]||id).join(", ")||"—")}</td><td><button class="btn red" data-del-staff="${esc(uid)}" type="button">Delete Profile</button></td></tr>`).join("")}</table></div><p class="muted">This removes the staff profile and duty history from the database. Firebase Authentication login must be deleted separately in Firebase Console.</p>`:"No staff profiles found.";
+ $("staffList").querySelectorAll("[data-del-staff]").forEach(b=>b.onclick=()=>deleteStaffProfile(b.dataset.delStaff));
+}
+async function deleteStaffProfile(uid){
+ if(uid===currentUser.uid)return alert("You cannot delete the account currently signed in.");
+ const snap=await db.ref("users/"+uid).once("value"),person=snap.val(); if(!person)return alert("Staff profile not found.");
+ if(!confirm(`Delete profile for ${person.name||person.email||uid}? This removes the profile and duty history. Attendance and complaint history will remain. The Authentication login is NOT deleted.`))return;
+ try{await db.ref().update({["users/"+uid]:null,["dutyAssignments/"+uid]:null});await loadStaffList();alert("Staff profile deleted. Delete/disable the Authentication account separately in Firebase Console.");}
+ catch(e){alert("Delete failed: "+niceError(e)+". Check Firebase Database Rules for Admin write permission.")}
+}
+async function financeView(p){
+ if(profile.role!=="Admin"){p.innerHTML='<div class="card"><h3>Access denied</h3><p>Finance reports are available to Admin only.</p></div>';return}
+ const [us,ss]=await Promise.all([db.ref("users").once("value"),getSites()]);
+ const users=us.val()||{},sites=ss;
+ const staff=Object.entries(users).filter(([uid,u])=>u&&u.role&&u.role!=="Admin").map(([uid,u])=>({uid,...u}));
+ const options=arr=>arr.map(x=>`<option value="${esc(x.uid||x.id)}">${esc(x.name||x.email||x.uid||x.id)}</option>`).join("");
+ const siteOpts=sites.map(x=>`<option value="${esc(x.id)}">${esc(x.name)} (${esc(x.code||"")})</option>`).join("");
+ const today=new Date().toISOString().slice(0,10);
+ p.innerHTML=`
+ <div class="card"><h3>Daily & Monthly Accounts — Admin Only</h3><p class="muted">Billing and normal wages are calculated from CHECK_IN attendance. Relief duty entries replace the normal attendance wage for that reliever on the covered site/date, then apply the relief pay and absent-worker deduction. Confirm attendance and wage rates before payroll finalisation.</p>
+ <label>Report Date</label><input type="date" id="financeDate" value="${today}"><label>Month</label><input type="month" id="financeMonth" value="${today.slice(0,7)}"><div class="row"><button class="btn" id="runDaily">Show Daily Report</button><button class="btn gold" id="runMonthly">Show Monthly Report</button></div><div class="row"><button class="btn green" id="exportFinance">Download Excel CSV</button><button class="btn" id="shareFinance">Share Summary on WhatsApp</button></div><div id="financeSummary" class="grid"></div><div id="financeRows"></div></div>
+ <div class="card"><h3>Record Reliever Duty / Absence Adjustment</h3><p class="muted">Enter one record for the relief period. The system calculates absent-worker deduction and reliever payment from their saved daily wages. If special rates apply, enter them below.</p>
+ <label>Site</label><select id="relSite"><option value="">Select site</option>${siteOpts}</select>
+ <div class="row"><div><label>Absent Worker</label><select id="absentWorker"><option value="">Select absent worker</option>${options(staff)}</select></div><div><label>Reliever Worker</label><select id="relieverWorker"><option value="">Select reliever</option>${options(staff)}</select></div></div>
+ <div class="row"><div><label>From Date</label><input type="date" id="relFrom" value="${today}"></div><div><label>To Date</label><input type="date" id="relTo" value="${today}"></div></div>
+ <div class="row"><div><label>Absent Worker Deduction / Day (₹)</label><input type="number" min="0" step="0.01" id="absentDeduction" placeholder="Auto from daily wage"></div><div><label>Reliever Pay / Day (₹)</label><input type="number" min="0" step="0.01" id="relieverPay" placeholder="Auto from daily wage"></div></div>
+ <label>Reason / Note</label><textarea id="relNote" placeholder="Example: Ramesh absent; Suresh covered duty"></textarea><button class="btn" id="saveRelief">Save Reliever Duty</button><div id="reliefList" class="muted">Loading relief records…</div></div>
+ <div class="card"><h3>Record Staff Advance</h3><label>Staff Member</label><select id="advanceWorker"><option value="">Select staff</option>${options(staff)}</select><div class="row"><div><label>Advance Amount (₹)</label><input type="number" min="1" step="0.01" id="advanceAmount" placeholder="Example: 5000"></div><div><label>Date</label><input type="date" id="advanceDate" value="${today}"></div></div><label>Purpose / Note</label><textarea id="advanceNote" placeholder="Example: Salary advance"></textarea><button class="btn" id="saveAdvance">Save Advance</button></div>
+ <div class="card"><h3>Record Advance Recovery</h3><p class="muted">When an advance is deducted from salary, record the recovered amount here. This keeps the outstanding advance balance correct.</p><label>Staff Member</label><select id="recoveryWorker"><option value="">Select staff</option>${options(staff)}</select><div class="row"><div><label>Recovery Amount (₹)</label><input type="number" min="1" step="0.01" id="recoveryAmount"></div><div><label>Date</label><input type="date" id="recoveryDate" value="${today}"></div></div><label>Note</label><input id="recoveryNote" placeholder="Recovered from salary"><button class="btn gold" id="saveRecovery">Save Recovery</button></div>
+ <div class="card"><h3>Advance Ledger — All Staff</h3><div id="advanceLedger">Loading…</div></div>`;
+ let currentRows=[],lastTotals={revenue:0,wage:0,margin:0,advance:0,net:0,reliefAdd:0,absenceDeduction:0};
+ const periodMatch=(d,mode)=>mode==="daily"?d===$("financeDate").value:d.startsWith($("financeMonth").value);
+ const money=n=>"₹"+Number(n||0).toFixed(2);
+ async function loadAdvanceLedger(){
+  const [a,r]=await Promise.all([db.ref("salaryAdvances").once("value"),db.ref("salaryAdvanceRecoveries").once("value")]);
+  const advances=a.val()||{},recoveries=r.val()||{},totals={};
+  Object.values(advances).forEach(x=>{if(!x)return;let t=totals[x.uid]||(totals[x.uid]={given:0,recovered:0});t.given+=Number(x.amount||0)});
+  Object.values(recoveries).forEach(x=>{if(!x)return;let t=totals[x.uid]||(totals[x.uid]={given:0,recovered:0});t.recovered+=Number(x.amount||0)});
+  const rows=staff.map(u=>{let t=totals[u.uid]||{given:0,recovered:0};return `<tr><td>${esc(u.name||u.email)}</td><td>${money(t.given)}</td><td>${money(t.recovered)}</td><td><b>${money(Math.max(0,t.given-t.recovered))}</b></td></tr>`});
+  $("advanceLedger").innerHTML=`<div class="tablewrap"><table><tr><th>Staff</th><th>Total Advance</th><th>Recovered</th><th>Outstanding Advance</th></tr>${rows.join("")}</table></div>`;
+ }
+ $("saveRelief").onclick=async()=>{
+  const siteId=$("relSite").value,absentUid=$("absentWorker").value,relieverUid=$("relieverWorker").value,from=$("relFrom").value,to=$("relTo").value;
+  if(!siteId||!absentUid||!relieverUid||absentUid===relieverUid||!from||!to||to<from)return alert("Select site, two different staff members and a valid date range.");
+  const days=Math.round((new Date(to+"T00:00:00")-new Date(from+"T00:00:00"))/86400000)+1,absent=users[absentUid]||{},reliever=users[relieverUid]||{};
+  const deduction=$("absentDeduction").value===""?Number(absent.dailyWage||0):Number($("absentDeduction").value),pay=$("relieverPay").value===""?Number(reliever.dailyWage||0):Number($("relieverPay").value);
+  if(deduction<0||pay<0)return alert("Amounts cannot be negative.");
+  if(!confirm(`Save ${days} relief day(s)? Absent-worker deduction: ${money(deduction*days)}; reliever pay: ${money(pay*days)}.`))return;
+  try{await db.ref("relieverDuties").push({siteId,absentUid,absentName:absent.name||absent.email||"",relieverUid,relieverName:reliever.name||reliever.email||"",fromDate:from,toDate:to,days,absentDeductionPerDay:deduction,relieverPayPerDay:pay,absentDeductionTotal:deduction*days,relieverPayTotal:pay*days,note:$("relNote").value.trim(),createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:currentUser.uid});alert("Reliever duty saved.");$("relNote").value="";await loadFinanceReport("daily");await loadReliefList()}catch(e){alert(niceError(e))}
+ };
+ async function loadReliefList(){const snap=await db.ref("relieverDuties").limitToLast(100).once("value"),all=Object.entries(snap.val()||{}).reverse();$("reliefList").innerHTML=all.length?`<div class="tablewrap"><table><tr><th>Site</th><th>Absent</th><th>Reliever</th><th>Dates</th><th>Days</th><th>Deduction</th><th>Reliever Pay</th></tr>${all.map(([id,x])=>`<tr><td>${esc(sites.find(s=>s.id===x.siteId)?.name||x.siteId)}</td><td>${esc(x.absentName)}</td><td>${esc(x.relieverName)}</td><td>${esc(x.fromDate)} to ${esc(x.toDate)}</td><td>${Number(x.days||0)}</td><td>${money(x.absentDeductionTotal)}</td><td>${money(x.relieverPayTotal)}</td></tr>`).join("")}</table></div>`:"No relief duty entries yet."}
+ $("saveAdvance").onclick=async()=>{let uid=$("advanceWorker").value,amount=Number($("advanceAmount").value),date=$("advanceDate").value;if(!uid||amount<=0||!date)return alert("Select staff, enter a valid amount and date.");let u=users[uid]||{};try{await db.ref("salaryAdvances").push({uid,name:u.name||u.email||"",amount,date,note:$("advanceNote").value.trim(),createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:currentUser.uid});$("advanceAmount").value="";$("advanceNote").value="";alert("Advance saved.");await loadAdvanceLedger();await loadFinanceReport("daily")}catch(e){alert(niceError(e))}};
+ $("saveRecovery").onclick=async()=>{let uid=$("recoveryWorker").value,amount=Number($("recoveryAmount").value),date=$("recoveryDate").value;if(!uid||amount<=0||!date)return alert("Select staff, enter a valid recovery amount and date.");let u=users[uid]||{};try{await db.ref("salaryAdvanceRecoveries").push({uid,name:u.name||u.email||"",amount,date,note:$("recoveryNote").value.trim(),createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:currentUser.uid});$("recoveryAmount").value="";alert("Advance recovery saved.");await loadAdvanceLedger();await loadFinanceReport("daily")}catch(e){alert(niceError(e))}};
+ $("runDaily").onclick=()=>loadFinanceReport("daily");$("runMonthly").onclick=()=>loadFinanceReport("monthly");
+ $("exportFinance").onclick=()=>{if(!currentRows.length)return alert("First generate a report.");const csv=[["Date","Worker","Role","Site","Company Billing","Base Wage","Reliever Pay","Absence Deduction","Advance Paid","Net Payable","Gross Margin"],...currentRows.map(x=>[x.date,x.worker,x.role,x.site,x.revenue,x.baseWage,x.reliefAdd,x.absenceDeduction,x.advance,x.netPay,x.margin])].map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="assurance-admin-payroll-report.csv";a.click();URL.revokeObjectURL(url)};
+ $("shareFinance").onclick=()=>{const t=lastTotals,msg=`Assurance Security — Admin Finance Summary\nCompany billing: ${money(t.revenue)}\nBase wages: ${money(t.wage)}\nReliever pay: ${money(t.reliefAdd)}\nAbsence deduction: ${money(t.absenceDeduction)}\nAdvance paid: ${money(t.advance)}\nNet payable: ${money(t.net)}\nGross margin before overheads: ${money(t.margin)}\nDetailed CSV can be downloaded from the Admin panel.`;window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank")};
+ async function loadFinanceReport(mode){
+  const date=$("financeDate").value,month=$("financeMonth").value;if(mode==="daily"&&!date)return alert("Choose report date.");if(mode==="monthly"&&!month)return alert("Choose month.");
+  try{
+   const [as,rs,advS,recS]=await Promise.all([db.ref("attendance").once("value"),db.ref("relieverDuties").once("value"),db.ref("salaryAdvances").once("value"),db.ref("salaryAdvanceRecoveries").once("value")]);
+   const attendance=as.val()||{},reliefs=Object.values(rs.val()||{}),advances=Object.values(advS.val()||{}),recoveries=Object.values(recS.val()||{}),latest={};
+   const reliefCovered=(uid,siteId,d)=>reliefs.some(r=>r&&r.relieverUid===uid&&r.siteId===siteId&&d>=r.fromDate&&d<=r.toDate);
+   Object.values(attendance).forEach(e=>{if(!e||e.action!=="CHECK_IN"||!e.uid||!e.timestamp)return;const d=new Date(e.timestamp).toISOString().slice(0,10);if(!periodMatch(d,mode)||reliefCovered(e.uid,e.siteId,d))return;const k=d+"|"+e.uid+"|"+e.siteId;if(!latest[k]||e.timestamp>latest[k].timestamp)latest[k]=e});
+   currentRows=Object.values(latest).map(e=>{const d=new Date(e.timestamp).toISOString().slice(0,10),u=users[e.uid]||{},site=sites.find(s=>s.id===e.siteId)||{},revenue=Number(site.clientRatePerGuard||0),wage=Number(u.dailyWage||0);return {date:d,worker:u.name||e.name||e.uid,role:u.designation||u.role||"",site:site.name||e.siteId,revenue,baseWage:wage,reliefAdd:0,absenceDeduction:0,advance:0,netPay:wage,margin:revenue-wage}});
+   let reliefRows=[];reliefs.forEach(r=>{if(!r)return;let days=[];let d=new Date(r.fromDate+"T00:00:00"),end=new Date(r.toDate+"T00:00:00");for(;d<=end;d.setDate(d.getDate()+1)){let ds=d.toISOString().slice(0,10);if(periodMatch(ds,mode))days.push(ds)}days.forEach(ds=>{const site=sites.find(s=>s.id===r.siteId)||{};currentRows.push({date:ds,worker:r.relieverName||r.relieverUid,role:"Reliever",site:site.name||r.siteId,revenue:Number(site.clientRatePerGuard||0),baseWage:0,reliefAdd:Number(r.relieverPayPerDay||0),absenceDeduction:Number(r.absentDeductionPerDay||0),advance:0,netPay:Number(r.relieverPayPerDay||0)-Number(r.absentDeductionPerDay||0),margin:Number(site.clientRatePerGuard||0)-Number(r.relieverPayPerDay||0)})})});
+   advances.forEach(a=>{if(!a||!periodMatch(a.date||"",mode))return;let row=currentRows.find(x=>x.worker===(a.name||""));if(row)row.advance+=Number(a.amount||0);else currentRows.push({date:a.date,worker:a.name||a.uid,role:"Advance",site:"—",revenue:0,baseWage:0,reliefAdd:0,absenceDeduction:0,advance:Number(a.amount||0),netPay:-Number(a.amount||0),margin:0})});
+   recoveries.forEach(r=>{if(!r||!periodMatch(r.date||"",mode))return;let row=currentRows.find(x=>x.worker===(r.name||""));if(row)row.advance-=Number(r.amount||0)});
+   currentRows.forEach(x=>{x.netPay=x.baseWage+x.reliefAdd-x.absenceDeduction-x.advance});
+   currentRows.sort((a,b)=>a.date.localeCompare(b.date)||a.site.localeCompare(b.site)||a.worker.localeCompare(b.worker));
+   const t=currentRows.reduce((a,x)=>({revenue:a.revenue+x.revenue,wage:a.wage+x.baseWage,reliefAdd:a.reliefAdd+x.reliefAdd,absenceDeduction:a.absenceDeduction+x.absenceDeduction,advance:a.advance+x.advance,net:a.net+x.netPay,margin:a.margin+x.margin}),{revenue:0,wage:0,reliefAdd:0,absenceDeduction:0,advance:0,net:0,margin:0});lastTotals=t;
+   $("financeSummary").innerHTML=[["Company Billing",money(t.revenue)],["Base Worker Wages",money(t.wage)],["Reliever Pay (+)",money(t.reliefAdd)],["Absent Worker Deduction (−)",money(t.absenceDeduction)],["Advance Paid (−)",money(t.advance)],["Net Payable",money(t.net)],["Gross Margin before overheads",money(t.margin)]].map(([k,v])=>`<div class="card"><b>${k}</b><h3>${v}</h3></div>`).join("");
+   $("financeRows").innerHTML=currentRows.length?`<div class="tablewrap"><table><tr><th>Date</th><th>Worker</th><th>Role</th><th>Site</th><th>Company ₹</th><th>Base Wage ₹</th><th>Reliever + ₹</th><th>Absence − ₹</th><th>Advance − ₹</th><th>Net Pay ₹</th><th>Margin ₹</th></tr>${currentRows.map(x=>`<tr><td>${esc(x.date)}</td><td>${esc(x.worker)}</td><td>${esc(x.role)}</td><td>${esc(x.site)}</td><td>${money(x.revenue)}</td><td>${money(x.baseWage)}</td><td>${money(x.reliefAdd)}</td><td>${money(x.absenceDeduction)}</td><td>${money(x.advance)}</td><td><b>${money(x.netPay)}</b></td><td>${money(x.margin)}</td></tr>`).join("")}</table></div>`:"No attendance or payroll entries found for this period.";
+  }catch(e){$("financeRows").textContent=niceError(e)}
+ }
+ await Promise.all([loadAdvanceLedger(),loadReliefList()]);await loadFinanceReport("daily");
 }
 async function recordsView(p){p.innerHTML=`<div class="card"><h3>Attendance Records</h3><div id="attendanceRows">Loading…</div></div><div class="card"><h3>Complaint Records</h3><div id="complaintRows">Loading…</div></div>`;try{let [a,c,sites]=await Promise.all([db.ref("attendance").limitToLast(100).once("value"),db.ref("complaints").limitToLast(100).once("value"),getSites()]);let siteMap=Object.fromEntries(sites.map(s=>[s.id,s.name]));let filter=x=>profile.role==="Admin"||profile.role==="Manager"||profile.role==="Operating Officer"?true:(profile.assignedSites||[]).includes(x.siteId);
  let ar=Object.values(a.val()||{}).filter(filter).reverse(),cr=Object.values(c.val()||{}).filter(filter).reverse();
- $("attendanceRows").innerHTML=ar.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Action</th><th>Remark</th></tr>${ar.map(x=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.action)}</td><td>${esc(x.remark)}</td></tr>`).join("")}</table></div>`:"No attendance records.";
- $("complaintRows").innerHTML=cr.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Details</th><th>Photo</th></tr>${cr.map(x=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.details)}</td><td>${x.photoUrl?`<a href="${esc(x.photoUrl)}" target="_blank" rel="noopener">View photo</a>`:"—"}</td></tr>`).join("")}</table></div>`:"No complaints.";
+ let ae=Object.entries(a.val()||{}).filter(([id,x])=>filter(x)),ce=Object.entries(c.val()||{}).filter(([id,x])=>filter(x));
+ $("attendanceRows").innerHTML=ae.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Action</th><th>Remark</th><th>Delete</th></tr>${ae.reverse().map(([id,x])=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.action)}</td><td>${esc(x.remark)}</td><td>${profile.role==="Admin"?`<button class="btn red" data-del-att="${esc(id)}" type="button">Delete</button>`:"—"}</td></tr>`).join("")}</table></div>`:"No attendance records.";
+ $("complaintRows").innerHTML=ce.length?`<div class="tablewrap"><table><tr><th>Time</th><th>Staff</th><th>Site</th><th>Details</th><th>Photo</th><th>Delete</th></tr>${ce.reverse().map(([id,x])=>`<tr><td>${x.timestamp?new Date(x.timestamp).toLocaleString():"—"}</td><td>${esc(x.name)}</td><td>${esc(siteMap[x.siteId]||x.siteId)}</td><td>${esc(x.details)}</td><td>${x.photoUrl?`<a href="${esc(x.photoUrl)}" target="_blank" rel="noopener">View photo</a>`:"—"}</td><td>${profile.role==="Admin"?`<button class="btn red" data-del-cmp="${esc(id)}" type="button">Delete</button>`:"—"}</td></tr>`).join("")}</table></div>`:"No complaints.";
+ if(profile.role==="Admin"){
+  $("attendanceRows").querySelectorAll("[data-del-att]").forEach(b=>b.onclick=()=>deleteDataRecord("attendance",b.dataset.delAtt,"attendance record"));
+  $("complaintRows").querySelectorAll("[data-del-cmp]").forEach(b=>b.onclick=()=>deleteDataRecord("complaints",b.dataset.delCmp,"complaint"));
+ }
  }catch(e){$("attendanceRows").textContent=niceError(e)}}
+async function deleteDataRecord(collection,id,label){
+ if(!confirm(`Permanently delete this ${label}? This cannot be undone.`))return;
+ try{await db.ref(collection+"/"+id).remove();await recordsView($("panel"));alert(label+" deleted.");}
+ catch(e){alert("Delete failed: "+niceError(e)+". Check Firebase Database Rules for Admin write permission.")}
+}
 </script>
 </body></html>
