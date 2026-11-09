@@ -19,7 +19,7 @@
     /* Top Contact Strip */
     .top-bar {
       background: #020617; color: #e2e8f0; font-size: 12px; padding: 6px 14px;
-      display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;
     }
     .top-bar a { color: #fbbf24; text-decoration: none; font-weight: 600; }
 
@@ -28,21 +28,22 @@
       background: linear-gradient(135deg, #0a1931, #1e3a8a);
       color: #fff; padding: 12px 16px; display: flex; align-items: center;
       justify-content: space-between; flex-wrap: wrap; gap: 10px;
-      position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     }
     .brand { display: flex; align-items: center; gap: 12px; }
     .logo-circle {
       width: 58px; height: 58px; border-radius: 50%; background: #fff;
-      padding: 2px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      padding: 2px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.35);
     }
     .brand-title h1 { font-size: 17px; color: #fff; letter-spacing: 0.5px; line-height: 1.2; }
-    .brand-title p { font-size: 11px; color: #fde68a; font-weight: 600; }
+    .brand-title p { font-size: 11px; color: #fde68a; font-weight: 700; }
 
     .btn {
       border: none; padding: 9px 14px; border-radius: 8px; cursor: pointer;
       font-weight: 600; font-size: 13px; display: inline-flex;
-      align-items: center; justify-content: center; gap: 6px; text-decoration: none;
+      align-items: center; justify-content: center; gap: 6px; text-decoration: none; transition: 0.2s;
     }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-gold { background: var(--gold); color: #000; }
     .btn-blue { background: var(--secondary); color: #fff; }
     .btn-green { background: var(--green); color: #fff; }
@@ -53,15 +54,15 @@
     .hero {
       background: linear-gradient(rgba(10, 25, 49, 0.9), rgba(30, 58, 138, 0.92)),
                   url('https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=1000&q=80') center/cover;
-      color: #fff; text-align: center; padding: 36px 16px;
+      color: #fff; text-align: center; padding: 38px 16px;
     }
     .hero h2 { font-size: 22px; color: #fbbf24; margin-bottom: 8px; }
     .hero p { font-size: 14px; max-width: 650px; margin: 0 auto 18px; color: #e2e8f0; }
 
-    .container { max-width: 1080px; margin: 16px auto; padding: 0 12px; }
+    .container { max-width: 1100px; margin: 16px auto; padding: 0 12px; }
     .card {
       background: #fff; border-radius: 12px; padding: 16px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.06); margin-bottom: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07); margin-bottom: 16px;
     }
     .card-title {
       font-size: 16px; font-weight: 700; color: var(--primary);
@@ -69,7 +70,7 @@
       display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
     }
 
-    /* Services Grid */
+    /* Services & Offices */
     .service-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
     .service-box {
       background: #f8fafc; border: 1px solid #e2e8f0; border-top: 4px solid var(--secondary);
@@ -77,8 +78,10 @@
     }
     .service-box h4 { color: var(--primary); margin-bottom: 6px; font-size: 15px; }
     .service-box p { font-size: 12px; color: #475569; }
+    .office-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    .office-card { border-left: 4px solid var(--secondary); background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 13px; }
 
-    /* Forms */
+    /* Forms & Grids */
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #334155; }
     .form-control {
@@ -87,8 +90,8 @@
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
     .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 
-    /* Multi-Site Checkbox Selector Box */
-    .site-Check-box {
+    /* Multi-Site Checkbox Box */
+    .site-check-box {
       max-height: 180px; overflow-y: auto; border: 1px solid #cbd5e1;
       border-radius: 8px; padding: 10px; background: #f8fafc;
     }
@@ -97,8 +100,8 @@
       border-bottom: 1px solid #e2e8f0; font-size: 13px;
     }
 
-    /* Admin Navigation Tabs */
-    .admin-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 14px; }
+    /* Navigation Tabs */
+    .nav-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 14px; }
     .tab-btn {
       padding: 9px 14px; border-radius: 8px; border: 1px solid #cbd5e1;
       background: #fff; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
@@ -107,9 +110,15 @@
 
     /* Tables */
     .table-wrap { overflow-x: auto; margin-top: 10px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 550px; }
-    th, td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 580px; }
+    th, td { border: 1px solid #e2e8f0; padding: 8px; text-align: left; vertical-align: middle; }
     th { background: #f1f5f9; color: var(--primary); font-weight: 700; }
+
+    /* Complaint Photo Thumbnail */
+    .thumb-img {
+      width: 65px; height: 65px; object-fit: cover; border-radius: 6px;
+      border: 2px solid #cbd5e1; cursor: pointer;
+    }
 
     /* Badges */
     .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block; }
@@ -118,18 +127,15 @@
     .badge-info { background: #dbeafe; color: #1d4ed8; }
     .badge-warn { background: #fef3c7; color: #b45309; }
 
-    /* Login Modal */
+    /* Modals */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
       display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px;
     }
     .modal-box {
-      background: #fff; width: 100%; max-width: 400px; border-radius: 12px;
-      padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      background: #fff; width: 100%; max-width: 420px; border-radius: 12px;
+      padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.35);
     }
-
-    .office-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
-    .office-card { border-left: 4px solid var(--secondary); background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 13px; }
 
     .hidden { display: none !important; }
     footer { background: #0a1931; color: #cbd5e1; text-align: center; padding: 20px 14px; font-size: 12px; margin-top: 30px; }
@@ -140,7 +146,7 @@
   <!-- Top Bar -->
   <div class="top-bar">
     <span>📞 <a href="tel:+917890232318">+91 7890232318</a> | ✉️ <a href="mailto:info@asampsolution.com">info@asampsolution.com</a></span>
-    <span>🌐 www.asampsolution.com</span>
+    <span id="syncIndicator">🟢 System Ready</span>
   </div>
 
   <!-- Header -->
@@ -183,8 +189,8 @@
   <!-- PUBLIC WEBSITE SECTION -->
   <div id="publicSection">
     <section class="hero">
-      <h2>Trusted Security & Manpower Services</h2>
-      <p>Providing Trained Security Guards, Supervisors, Gunmen, Bouncers, Corporate & Industrial Security across Kolkata, Howrah & West Bengal.</p>
+      <h2>24×7 Professional Security & Manpower Solution</h2>
+      <p>Trained Security Guards, Supervisors, Gunmen, Bouncers, Corporate & Industrial Security across Kolkata, Howrah & All West Bengal.</p>
       <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
         <a href="https://wa.me/917890232318" target="_blank" class="btn btn-green">💬 WhatsApp Enquiry</a>
         <button class="btn btn-gold" onclick="openLoginModal()">🔐 Employee Portal Login</button>
@@ -238,7 +244,7 @@
     </div>
   </div>
 
-  <!-- SECURE LOGIN MODAL (NO PASSWORDS OR HINTS EXPOSED) -->
+  <!-- SECURE LOGIN MODAL -->
   <div id="loginModal" class="modal-overlay hidden">
     <div class="modal-box">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
@@ -258,32 +264,76 @@
     </div>
   </div>
 
-  <!-- PRIVATE DASHBOARD SECTION (VISIBLE ONLY AFTER VALID LOGIN) -->
+  <!-- FULL SCREEN PHOTO VIEW MODAL -->
+  <div id="photoModal" class="modal-overlay hidden" onclick="closePhotoModal()">
+    <div class="modal-box" style="max-width:550px; text-align:center;" onclick="event.stopPropagation()">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h4 id="photoModalTitle" style="color:var(--primary); font-size:15px;">📷 साइट फोटो सबूत</h4>
+        <button class="btn btn-red btn-sm" onclick="closePhotoModal()">✖ बंद करें</button>
+      </div>
+      <img id="photoModalImg" src="" style="width:100%; max-height:65vh; object-fit:contain; border-radius:8px; border:1px solid #cbd5e1;">
+      <p id="photoModalCaption" style="font-size:13px; color:#334155; margin-top:10px; text-align:left;"></p>
+    </div>
+  </div>
+
+  <!-- PRIVATE DASHBOARD SECTION -->
   <div id="portalSection" class="container hidden">
-    <!-- User Top Banner -->
     <div class="card" style="background:var(--primary); color:#fff; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
       <div>
         <h3 id="dashUserName" style="color:#fbbf24; font-size:17px;"></h3>
         <p id="dashUserRole" style="font-size:12px; color:#cbd5e1;"></p>
       </div>
-      <button class="btn btn-red" onclick="logoutUser()">🚪 Logout</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-gold btn-sm" onclick="pullFromCloud(true)">🔄 Refresh Data</button>
+        <button class="btn btn-red btn-sm" onclick="logoutUser()">🚪 Logout</button>
+      </div>
     </div>
 
     <!-- ================= ADMIN MASTER PANEL ================= -->
     <div id="adminMasterPanel" class="hidden">
-      <div class="admin-tabs">
-        <button class="tab-btn active" onclick="switchAdminTab('tabStaff', this)">👥 स्टाफ ID और साइट आवंटन (Assign Sites)</button>
-        <button class="tab-btn" onclick="switchAdminTab('tabSites', this)">🏢 सभी साइट्स मैनेज करें (100+ Sites)</button>
-        <button class="tab-btn" onclick="switchAdminTab('tabReports', this)">📊 लाइव अटेंडेंस और रिपोर्ट्स</button>
-        <button class="tab-btn" onclick="switchAdminTab('tabSecurity', this)">🔑 एडमिन पासवर्ड व बैकअप</button>
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchAdminTab('tabComplaints', this)">🚨 फोटो शिकायतें (Issues & Photos)</button>
+        <button class="tab-btn" onclick="switchAdminTab('tabStaff', this)">👥 स्टाफ ID और साइट आवंटन</button>
+        <button class="tab-btn" onclick="switchAdminTab('tabSites', this)">🏢 सभी साइट्स (100+ Sites)</button>
+        <button class="tab-btn" onclick="switchAdminTab('tabReports', this)">📊 लाइव हाजिरी व फील्ड रिपोर्ट</button>
+        <button class="tab-btn" onclick="switchAdminTab('tabCloud', this)">☁️ क्लाउड सिंक व पासवर्ड</button>
       </div>
 
-      <!-- ADMIN TAB 1: CREATE STAFF & ASSIGN SITES -->
-      <div id="tabStaff" class="admin-tab-content">
+      <!-- ADMIN TAB 1: PHOTO COMPLAINTS & ISSUES (FULL ADMIN EDIT/DELETE POWER) -->
+      <div id="tabComplaints" class="admin-tab-content">
+        <div class="card">
+          <div class="card-title">
+            <span>🚨 साइट्स से आई फोटो शिकायतें और समस्याएं (Admin Control Only)</span>
+            <span class="badge badge-danger">सिर्फ़ Admin Edit/Delete कर सकता है</span>
+          </div>
+          <p style="font-size:12px; color:#475569; margin-bottom:10px;">
+            यहाँ गार्ड, इंचार्ज या ऑफिसर द्वारा खींची गई फोटो और शिकायत दिखेगी। Manager, Officer और In-charge इसे सिर्फ़ देख सकते हैं, लेकिन <b>Edit या Delete करने का अधिकार सिर्फ़ आपके (Admin) पास है।</b>
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>दिनांक व समय</th>
+                  <th>साइट का नाम</th>
+                  <th>किसने भेजा (Staff)</th>
+                  <th>फोटो सबूत (Photo)</th>
+                  <th>शिकायत / समस्या विवरण</th>
+                  <th>स्टेटस / रिमार्क</th>
+                  <th>Admin Action (Edit / Delete)</th>
+                </tr>
+              </thead>
+              <tbody id="adminComplaintsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN TAB 2: STAFF & SITE ALLOCATION -->
+      <div id="tabStaff" class="admin-tab-content hidden">
         <div class="card">
           <div class="card-title">
             <span id="staffFormHeading">➕ नया स्टाफ लॉगिन बनाएं और साइट्स बांटें</span>
-            <span class="badge badge-info">Admin Control</span>
+            <span class="badge badge-info">100+ Sites Allocation</span>
           </div>
           <input type="hidden" id="editStaffIndex" value="-1">
           <div class="grid-2">
@@ -302,7 +352,7 @@
             </div>
             <div class="form-group">
               <label>User ID बनाएं (लॉगिन के लिए)</label>
-              <input type="text" id="stUserId" class="form-control" placeholder="उदा. sic_rajesh या mgr01">
+              <input type="text" id="stUserId" class="form-control" placeholder="उदा. sic_rajesh या grd01">
             </div>
             <div class="form-group">
               <label>Password बनाएं</label>
@@ -310,17 +360,16 @@
             </div>
           </div>
 
-          <!-- Multi-Site Allocation Checkboxes -->
           <div class="form-group" style="margin-top:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
-              <label style="margin:0; color:var(--secondary); font-size:13px;">📍 इस यूजर को कौन-कौन सी साइट्स देनी हैं? (टिक लगाएं):</label>
+              <label style="margin:0; color:var(--secondary); font-size:13px;">📍 इस व्यक्ति को कौन-कौन सी साइट्स देनी हैं? (टिक लगाएं):</label>
               <div style="display:flex; gap:6px;">
-                <button type="button" class="btn btn-blue btn-sm" onclick="toggleAllSiteChecks(true)">✅ सभी चुनें (Select All)</button>
+                <button type="button" class="btn btn-blue btn-sm" onclick="toggleAllSiteChecks(true)">✅ सभी चुनें</button>
                 <button type="button" class="btn btn-red btn-sm" onclick="toggleAllSiteChecks(false)">✖ सभी हटाएं</button>
               </div>
             </div>
-            <input type="text" id="siteFilterInput" class="form-control" placeholder="🔍 साइट का नाम या कोड खोजें (100 साइट्स में से तुरंत ढूंढने के लिए)..." onkeyup="filterSiteCheckboxes()" style="margin-bottom:6px;">
-            <div id="siteCheckboxList" class="site-Check-box"></div>
+            <input type="text" id="siteFilterInput" class="form-control" placeholder="🔍 साइट का नाम या कोड खोजें..." onkeyup="filterSiteCheckboxes()" style="margin-bottom:6px;">
+            <div id="siteCheckboxList" class="site-check-box"></div>
           </div>
 
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -329,7 +378,6 @@
           </div>
         </div>
 
-        <!-- Staff Directory & Assigned Sites List -->
         <div class="card">
           <div class="card-title">📋 सभी स्टाफ की लिस्ट और उनको दी गई साइट्स</div>
           <div class="table-wrap">
@@ -341,7 +389,7 @@
                   <th>User ID</th>
                   <th>Password</th>
                   <th>दी गई साइट्स (Assigned Sites)</th>
-                  <th>एक्शन (Edit / Delete)</th>
+                  <th>Admin Action</th>
                 </tr>
               </thead>
               <tbody id="staffTableBody"></tbody>
@@ -350,7 +398,7 @@
         </div>
       </div>
 
-      <!-- ADMIN TAB 2: MANAGE SITES (UP TO 100+ SITES) -->
+      <!-- ADMIN TAB 3: MANAGE SITES -->
       <div id="tabSites" class="admin-tab-content hidden">
         <div class="card">
           <div class="card-title">🏢 नई ड्यूटी साइट जोड़ें (50m Geofencing के साथ)</div>
@@ -390,7 +438,7 @@
                   <th>कोड</th>
                   <th>साइट का नाम</th>
                   <th>GPS Coordinates (50m Radius)</th>
-                  <th>हटाएं</th>
+                  <th>Admin Action</th>
                 </tr>
               </thead>
               <tbody id="sitesTableBody"></tbody>
@@ -399,11 +447,11 @@
         </div>
       </div>
 
-      <!-- ADMIN TAB 3: REPORTS -->
+      <!-- ADMIN TAB 4: ATTENDANCE & FIELD REPORTS -->
       <div id="tabReports" class="admin-tab-content hidden">
         <div class="card">
           <div class="card-title">
-            <span>📊 सभी साइट्स की हाजिरी और फील्ड रिपोर्ट</span>
+            <span>📊 सभी साइट्स की हाजिरी और फील्ड रिपोर्ट (Admin Edit/Delete)</span>
             <div style="display:flex; gap:6px;">
               <button class="btn btn-green btn-sm" onclick="shareWhatsAppSummary()">💬 WhatsApp रिपोर्ट</button>
               <button class="btn btn-blue btn-sm" onclick="downloadExcelCsv()">📥 Excel डाउनलोड</button>
@@ -416,9 +464,10 @@
                   <th>समय</th>
                   <th>स्टाफ का नाम (Role)</th>
                   <th>साइट</th>
-                  <th>एक्शन / रिपोर्ट</th>
-                  <th>GPS स्टेटस</th>
-                  <th>अप्रूवल / रिमार्क</th>
+                  <th>एक्शन / शिफ्ट</th>
+                  <th>GPS दूरी</th>
+                  <th>रिमार्क / स्टेटस</th>
+                  <th>Admin Action (Edit/Delete)</th>
                 </tr>
               </thead>
               <tbody id="adminLogsBody"></tbody>
@@ -427,8 +476,26 @@
         </div>
       </div>
 
-      <!-- ADMIN TAB 4: ADMIN PASSWORD & BACKUP -->
-      <div id="tabSecurity" class="admin-tab-content hidden">
+      <!-- ADMIN TAB 5: CLOUD DATABASE & SECURITY -->
+      <div id="tabCloud" class="admin-tab-content hidden">
+        <div class="card">
+          <div class="card-title">
+            <span>☁️ लाइव क्लाउड सर्वर जोड़ें (सभी मोबाइल का डेटा एक साथ जोड़ने के लिए)</span>
+            <span class="badge badge-success">100% Free Firebase Sync</span>
+          </div>
+          <p style="font-size:12px; color:#334155; margin-bottom:10px;">
+            जब आप यहाँ अपना <b>Free Firebase Realtime Database URL</b> डालकर सेव करेंगे, तो गार्ड, साइट इंचार्ज, ऑपरेटिंग ऑफिसर और मैनेजर अपने-अपने मोबाइल से जो भी एंट्री या फोटो डालेंगे, वह सीधा आपके मोबाइल पर लाइव दिखेगा!
+          </p>
+          <div class="form-group">
+            <label>Firebase Realtime Database URL (उदा. https://assurance-security-default-rtdb.firebaseio.com/)</label>
+            <input type="url" id="inpCloudUrl" class="form-control" placeholder="https://your-project-default-rtdb.firebaseio.com/">
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-green" onclick="saveCloudUrl()">☁️ क्लाउड लिंक सेव और सिंक करें</button>
+            <button class="btn btn-blue" onclick="pushToCloud(true)">⬆️ सारा डेटा क्लाउड पर भेजें</button>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-title">🔑 एडमिन का खुद का User ID और Password बदलें</div>
           <div class="grid-2">
@@ -446,66 +513,145 @@
       </div>
     </div>
 
-    <!-- ================= STAFF PANEL (MANAGER / OFFICER / IN-CHARGE / GUARD) ================= -->
+    <!-- ================= STAFF PANEL (GUARD / IN-CHARGE / OFFICER / MANAGER) ================= -->
     <div id="staffRolePanel" class="hidden">
-      <div class="card">
-        <div class="card-title">
-          <span id="staffPanelTitle">📍 आपको आवंटित साइट्स (Your Assigned Sites Only)</span>
-          <span id="assignedCountBadge" class="badge badge-info">0 Sites Assigned</span>
-        </div>
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchStaffTab('stTabAttendance', this)">📍 ड्यूटी हाजिरी / फील्ड रिपोर्ट</button>
+        <button class="tab-btn" onclick="switchStaffTab('stTabComplaint', this)">🚨 फोटो खींचकर शिकायत भेजें (Report Issue)</button>
+        <button class="tab-btn" onclick="switchStaffTab('stTabView', this)">👁️ साइट की शिकायतें व रिकॉर्ड देखें (View Only)</button>
+      </div>
 
-        <div class="grid-2">
-          <div class="form-group">
-            <label>अपनी आवंटित ड्यूटी साइट चुनें (Select Assigned Site)</label>
-            <select id="staffSiteDropdown" class="form-control" onchange="resetGuardGpsState()"></select>
+      <!-- STAFF TAB 1: ATTENDANCE & FIELD VISIT -->
+      <div id="stTabAttendance" class="staff-tab-content">
+        <div class="card">
+          <div class="card-title">
+            <span>📍 ड्यूटी हाजिरी और फील्ड विजिट (50m GPS Geofencing)</span>
+            <span id="assignedCountBadge" class="badge badge-info">0 Sites Assigned</span>
           </div>
-          <div class="form-group">
-            <label>शिफ्ट / विजिट का प्रकार</label>
-            <select id="staffShiftDropdown" class="form-control">
-              <option value="Day Shift (8 AM - 8 PM)">Day Shift (8 AM - 8 PM)</option>
-              <option value="Night Shift (8 PM - 8 AM)">Night Shift (8 PM - 8 AM)</option>
-              <option value="Field Inspection / Surprise Check">Field Inspection / Surprise Check</option>
-              <option value="Site Daily Attendance Report">Site Daily Attendance Report</option>
-            </select>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>अपनी आवंटित ड्यूटी साइट चुनें (Select Assigned Site)</label>
+              <select id="staffSiteDropdown" class="form-control" onchange="resetGuardGpsState()"></select>
+            </div>
+            <div class="form-group">
+              <label>शिफ्ट / ड्यूटी का प्रकार</label>
+              <select id="staffShiftDropdown" class="form-control">
+                <option value="Day Shift (8 AM - 8 PM)">Day Shift (8 AM - 8 PM)</option>
+                <option value="Night Shift (8 PM - 8 AM)">Night Shift (8 PM - 8 AM)</option>
+                <option value="Field Inspection / Surprise Check">Field Inspection / Surprise Check</option>
+                <option value="Site Daily Attendance Report">Site Daily Attendance Report</option>
+              </select>
+            </div>
           </div>
-        </div>
 
-        <!-- Guard 50m Geofencing Box -->
-        <div id="gpsVerifyBox" style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:12px; font-size:13px;">
-          📍 <b>GPS वेरिफिकेशन:</b> नीचे "📍 अपनी GPS लोकेशन वेरिफाई करें" पर क्लिक करें। (गार्ड के लिए साइट के 50 मीटर के अंदर होना ज़रूरी है)।
-        </div>
+          <div id="gpsVerifyBox" style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:12px; font-size:13px;">
+            📍 <b>GPS वेरिफिकेशन:</b> नीचे "📍 अपनी GPS लोकेशन वेरिफाई करें" पर क्लिक करें। (गार्ड के लिए साइट के 50 मीटर के अंदर होना ज़रूरी है)।
+          </div>
 
-        <div class="form-group">
-          <label>रिमार्क / उपस्थिति विवरण (Remarks / Guard Count / Issue)</label>
-          <input type="text" id="staffRemarkInput" class="form-control" placeholder="उदा. सभी गार्ड उपस्थित हैं / रिलीवर ड्यूटी पर है">
-        </div>
+          <div class="form-group">
+            <label>रिमार्क / उपस्थिति विवरण</label>
+            <input type="text" id="staffRemarkInput" class="form-control" placeholder="उदा. ड्यूटी पर उपस्थित / सब ठीक है">
+          </div>
 
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn btn-blue" onclick="verifyStaffGps()">📍 अपनी GPS लोकेशन वेरिफाई करें</button>
-          <button id="btnStaffDutyIn" class="btn btn-green" onclick="submitStaffEntry('DUTY IN / REPORT')" disabled>✅ सबमिट करें (Submit Attendance / Report)</button>
-          <button id="btnStaffDutyOut" class="btn btn-red" onclick="submitStaffEntry('DUTY OUT')" disabled>🛑 DUTY OUT</button>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-blue" onclick="verifyStaffGps()">📍 अपनी GPS लोकेशन वेरिफाई करें</button>
+            <button id="btnStaffDutyIn" class="btn btn-green" onclick="submitStaffEntry('DUTY IN')" disabled>✅ DUTY IN / सबमिट करें</button>
+            <button id="btnStaffDutyOut" class="btn btn-red" onclick="submitStaffEntry('DUTY OUT')" disabled>🛑 DUTY OUT</button>
+          </div>
         </div>
       </div>
 
-      <!-- Filtered Logs Table (ONLY shows logs for the sites assigned to this specific user) -->
-      <div class="card">
-        <div class="card-title">
-          <span>📋 सिर्फ़ आपकी आवंटित साइट्स का रिकॉर्ड (Your Assigned Sites Data)</span>
+      <!-- STAFF TAB 2: UPLOAD PHOTO & SUBMIT COMPLAINT -->
+      <div id="stTabComplaint" class="staff-tab-content hidden">
+        <div class="card">
+          <div class="card-title">
+            <span>🚨 साइट की समस्या / शिकायत और लाइव फोटो अपलोड करें</span>
+            <span class="badge badge-danger">Direct Alert to Admin & Officers</span>
+          </div>
+          <p style="font-size:12px; color:#475569; margin-bottom:12px;">
+            अगर साइट पर कोई भी दिक्कत है, तो नीचे साइट चुनें, <b>कैमरा खोलकर फोटो खींचें</b> और अपनी शिकायत लिखकर सबमिट करें। यह शिकायत तुरंत Admin, Manager, Operating Officer और Site In-charge को दिख जाएगी।
+          </p>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>किस साइट पर दिक्कत है? (Select Site)</label>
+              <select id="compSiteDropdown" class="form-control"></select>
+            </div>
+            <div class="form-group">
+              <label>समस्या का प्रकार (Issue Category)</label>
+              <select id="compCategory" class="form-control">
+                <option value="Urgent Security Issue / Incident">🚨 Urgent Security Issue / घटना</option>
+                <option value="Reliever Late / Guard Shortage">⏰ रिलीवर नहीं आया / स्टाफ की कमी</option>
+                <option value="Site Facility / Water / Light Problem">💡 साइट पर लाइट / पानी / बैठने की दिक्कत</option>
+                <option value="Equipment / Uniform / Duty Problem">🛡️ यूनिफॉर्म / इक्विपमेंट या ड्यूटी समस्या</option>
+                <option value="Other Complaint">📝 अन्य शिकायत (Other)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>📷 मौके की फोटो खींचें या अपलोड करें (Take Live Photo / Upload Image)</label>
+            <input type="file" id="compPhotoInput" accept="image/*" capture="environment" class="form-control" onchange="previewComplaintPhoto(event)">
+            <div id="photoPreviewWrap" class="hidden" style="margin-top:8px;">
+              <img id="compPhotoPreview" src="" style="max-width:160px; border-radius:8px; border:2px solid #16a34a;">
+              <p style="font-size:11px; color:#15803d; font-weight:600;">✅ फोटो तैयार है (Auto-Compressed for Fast Upload)</p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>✍️ अपनी शिकायत विस्तार से लिखें (Write Your Complaint Clearly)</label>
+            <textarea id="compTextInput" rows="3" class="form-control" placeholder="सर, मुझे यहाँ साइट पर यह दिक्कत हो रही है..."></textarea>
+          </div>
+
+          <button class="btn btn-red" style="width:100%; padding:12px;" onclick="submitPhotoComplaint()">🚨 फोटो के साथ शिकायत सबमिट करें</button>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>समय</th>
-                <th>स्टाफ</th>
-                <th>साइट</th>
-                <th>एक्शन</th>
-                <th>GPS दूरी</th>
-                <th>रिमार्क / स्टेटस</th>
-              </tr>
-            </thead>
-            <tbody id="staffFilteredLogsBody"></tbody>
-          </table>
+      </div>
+
+      <!-- STAFF TAB 3: VIEW ONLY COMPLAINTS & LOGS (NO EDIT / NO DELETE FOR STAFF) -->
+      <div id="stTabView" class="staff-tab-content hidden">
+        <div class="card">
+          <div class="card-title">
+            <span>🚨 आपकी आवंटित साइट्स की फोटो शिकायतें (View Only)</span>
+            <span class="badge badge-warn">🔒 Edit/Delete Locked (Only Admin)</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>समय</th>
+                  <th>साइट का नाम</th>
+                  <th>शिकायतकर्ता</th>
+                  <th>फोटो सबूत</th>
+                  <th>शिकायत विवरण</th>
+                  <th>Admin स्टेटस / एक्शन</th>
+                </tr>
+              </thead>
+              <tbody id="staffComplaintsViewBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>📋 आपकी आवंटित साइट्स की हाजिरी और फील्ड रिपोर्ट (View Only)</span>
+            <span class="badge badge-info">Assigned Sites Only</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>समय</th>
+                  <th>स्टाफ</th>
+                  <th>साइट</th>
+                  <th>एक्शन</th>
+                  <th>GPS दूरी</th>
+                  <th>रिमार्क / स्टेटस</th>
+                </tr>
+              </thead>
+              <tbody id="staffFilteredLogsBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -519,33 +665,141 @@
   </footer>
 
   <script>
-    // Master Admin Credentials (Not shown anywhere on UI)
-    let adminCreds = JSON.parse(localStorage.getItem("asamp_v2_admin")) || {
+    // ================= STATE & STORAGE INITIALIZATION =================
+    let adminCreds = JSON.parse(localStorage.getItem("asamp_v3_admin")) || {
       id: "akhilesh",
       pass: "Admin@7890",
       name: "Akhilesh Kumar (Chief Admin)"
     };
 
-    // Initial Sample Sites
-    let siteList = JSON.parse(localStorage.getItem("asamp_v2_sites")) || [
-      { id: "S1", code: "KOL-01", name: "Picnic Garden Corporate Office, Kolkata", lat: 22.5280, lng: 88.3832 },
-      { id: "S2", code: "HWR-01", name: "Bally Industrial Complex, Howrah", lat: 22.6500, lng: 88.3400 }
+    let siteList = JSON.parse(localStorage.getItem("asamp_v3_sites")) || [
+      { id: "S1", code: "KOL-01", name: "Picnic Garden Marketing Office, Kolkata", lat: 22.5280, lng: 88.3832 },
+      { id: "S2", code: "HWR-01", name: "Bally Registered Office, Howrah", lat: 22.6500, lng: 88.3400 }
     ];
 
-    // Staff List created by Admin (Each has assignedSites array of site IDs)
-    let staffList = JSON.parse(localStorage.getItem("asamp_v2_staff")) || [];
-    let activityLogs = JSON.parse(localStorage.getItem("asamp_v2_logs")) || [];
+    let staffList = JSON.parse(localStorage.getItem("asamp_v3_staff")) || [];
+    let activityLogs = JSON.parse(localStorage.getItem("asamp_v3_logs")) || [];
+    let complaintsList = JSON.parse(localStorage.getItem("asamp_v3_complaints")) || [];
+    let cloudDbUrl = localStorage.getItem("asamp_v3_cloud_url") || "";
 
     let loggedInUser = null;
     let verifiedDistance = null;
+    let compressedPhotoData = "";
 
-    function saveAllStorage() {
-      localStorage.setItem("asamp_v2_admin", JSON.stringify(adminCreds));
-      localStorage.setItem("asamp_v2_sites", JSON.stringify(siteList));
-      localStorage.setItem("asamp_v2_staff", JSON.stringify(staffList));
-      localStorage.setItem("asamp_v2_logs", JSON.stringify(activityLogs));
+    function saveLocalData() {
+      localStorage.setItem("asamp_v3_admin", JSON.stringify(adminCreds));
+      localStorage.setItem("asamp_v3_sites", JSON.stringify(siteList));
+      localStorage.setItem("asamp_v3_staff", JSON.stringify(staffList));
+      localStorage.setItem("asamp_v3_logs", JSON.stringify(activityLogs));
+      localStorage.setItem("asamp_v3_complaints", JSON.stringify(complaintsList));
+      localStorage.setItem("asamp_v3_cloud_url", cloudDbUrl);
     }
 
+    // ================= CLOUD SYNC ENGINE (CONNECTS ALL PHONES) =================
+    function updateSyncBadge(text, isOk = true) {
+      const el = document.getElementById("syncIndicator");
+      if (el) el.innerText = isOk ? `🟢 ${text}` : `🟡 ${text}`;
+    }
+
+    async function pushToCloud(showAlert = false) {
+      saveLocalData();
+      if (!cloudDbUrl) {
+        updateSyncBadge("Local Mode (Connect Cloud in Admin)", false);
+        return;
+      }
+      try {
+        updateSyncBadge("Syncing to Cloud...");
+        const cleanUrl = cloudDbUrl.replace(/\/$/, "") + "/asamp_portal_db.json";
+        const payload = {
+          adminCreds,
+          siteList,
+          staffList,
+          activityLogs,
+          complaintsList,
+          lastUpdated: new Date().toISOString()
+        };
+        const res = await fetch(cleanUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          updateSyncBadge("Live Cloud Connected");
+          if (showAlert) alert("✅ सारा डेटा क्लाउड सर्वर पर सफलतापूर्वक सिंक हो गया!");
+        } else {
+          updateSyncBadge("Cloud Sync Error", false);
+        }
+      } catch (err) {
+        updateSyncBadge("Offline / Sync Pending", false);
+      }
+    }
+
+    async function pullFromCloud(showMsg = false) {
+      if (!cloudDbUrl) {
+        updateSyncBadge("Local Mode", false);
+        if (showMsg) alert("अभी क्लाउड लिंक नहीं जुड़ा है। Admin लॉगिन में 'क्लाउड सिंक' टैब में जाकर अपना Firebase URL जोड़ें।");
+        return;
+      }
+      try {
+        updateSyncBadge("Fetching Live Data...");
+        const cleanUrl = cloudDbUrl.replace(/\/$/, "") + "/asamp_portal_db.json";
+        const res = await fetch(cleanUrl);
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            if (data.adminCreds) adminCreds = data.adminCreds;
+            if (data.siteList) siteList = data.siteList;
+            if (data.staffList) staffList = data.staffList;
+            if (data.activityLogs) activityLogs = data.activityLogs;
+            if (data.complaintsList) complaintsList = data.complaintsList;
+            saveLocalData();
+            refreshCurrentViews();
+          }
+          updateSyncBadge("Live Cloud Connected");
+          if (showMsg) alert("✅ सभी मोबाइलों का ताज़ा डेटा लोड हो गया!");
+        }
+      } catch (err) {
+        updateSyncBadge("Cloud Fetch Failed", false);
+      }
+    }
+
+    function saveCloudUrl() {
+      const url = document.getElementById("inpCloudUrl").value.trim();
+      if (!url.startsWith("https://")) {
+        alert("कृपया सही https:// वाला Firebase Realtime Database URL डालें।");
+        return;
+      }
+      cloudDbUrl = url;
+      saveLocalData();
+      pushToCloud(true);
+    }
+
+    // Auto-pull on page load & every 25 seconds when logged in
+    window.addEventListener("load", () => {
+      if (cloudDbUrl) pullFromCloud(false);
+      setInterval(() => {
+        if (loggedInUser && cloudDbUrl) pullFromCloud(false);
+      }, 25000);
+    });
+
+    function refreshCurrentViews() {
+      if (!loggedInUser) return;
+      if (loggedInUser.role === "Admin") {
+        renderAdminComplaints();
+        renderSiteCheckboxes();
+        renderStaffTable();
+        renderSitesTable();
+        renderAdminLogs();
+      } else {
+        // Update assigned sites if admin changed them
+        const freshStaff = staffList.find(s => s.userId.toLowerCase() === loggedInUser.id.toLowerCase());
+        if (freshStaff) loggedInUser.assignedSites = freshStaff.assignedSites || [];
+        renderStaffComplaintsView();
+        renderStaffFilteredLogs();
+      }
+    }
+
+    // ================= AUTHENTICATION =================
     function openLoginModal() {
       document.getElementById("inpUserId").value = "";
       document.getElementById("inpUserPass").value = "";
@@ -556,7 +810,9 @@
       document.getElementById("loginModal").classList.add("hidden");
     }
 
-    function secureLogin() {
+    async function secureLogin() {
+      if (cloudDbUrl) await pullFromCloud(false);
+
       const uid = document.getElementById("inpUserId").value.trim();
       const upass = document.getElementById("inpUserPass").value.trim();
 
@@ -565,14 +821,12 @@
         return;
       }
 
-      // Check if Master Admin
       if (uid.toLowerCase() === adminCreds.id.toLowerCase() && upass === adminCreds.pass) {
         loggedInUser = { id: adminCreds.id, name: adminCreds.name, role: "Admin", assignedSites: siteList.map(s => s.id) };
         launchPortal();
         return;
       }
 
-      // Check Staff Database
       const foundStaff = staffList.find(s => s.userId.toLowerCase() === uid.toLowerCase() && s.userPass === upass);
       if (!foundStaff) {
         alert("❌ गलत User ID या Password! केवल अधिकृत स्टाफ ही लॉगिन कर सकते हैं।");
@@ -602,6 +856,8 @@
         document.getElementById("staffRolePanel").classList.add("hidden");
         document.getElementById("newAdminId").value = adminCreds.id;
         document.getElementById("newAdminPass").value = adminCreds.pass;
+        document.getElementById("inpCloudUrl").value = cloudDbUrl;
+        renderAdminComplaints();
         renderSiteCheckboxes();
         renderStaffTable();
         renderSitesTable();
@@ -622,9 +878,189 @@
 
     function switchAdminTab(tabId, btn) {
       document.querySelectorAll(".admin-tab-content").forEach(el => el.classList.add("hidden"));
-      document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll("#adminMasterPanel .tab-btn").forEach(el => el.classList.remove("active"));
       document.getElementById(tabId).classList.remove("hidden");
       btn.classList.add("active");
+    }
+
+    function switchStaffTab(tabId, btn) {
+      document.querySelectorAll(".staff-tab-content").forEach(el => el.classList.add("hidden"));
+      document.querySelectorAll("#staffRolePanel .tab-btn").forEach(el => el.classList.remove("active"));
+      document.getElementById(tabId).classList.remove("hidden");
+      btn.classList.add("active");
+    }
+
+    // ================= PHOTO COMPRESSION & COMPLAINT SYSTEM =================
+    function previewComplaintPhoto(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement("canvas");
+          const MAX_W = 600;
+          let w = img.width, h = img.height;
+          if (w > MAX_W) {
+            h = Math.round((h * MAX_W) / w);
+            w = MAX_W;
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          compressedPhotoData = canvas.toDataURL("image/jpeg", 0.65);
+          document.getElementById("compPhotoPreview").src = compressedPhotoData;
+          document.getElementById("photoPreviewWrap").classList.remove("hidden");
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function submitPhotoComplaint() {
+      const siteId = document.getElementById("compSiteDropdown").value;
+      const site = siteList.find(s => s.id === siteId);
+      if (!site) return alert("कृपया साइट चुनें।");
+
+      const category = document.getElementById("compCategory").value;
+      const text = document.getElementById("compTextInput").value.trim();
+
+      if (!text) {
+        alert("कृपया अपनी शिकायत या समस्या लिखें।");
+        return;
+      }
+
+      const newComp = {
+        id: "CMP_" + Date.now(),
+        time: new Date().toLocaleString("en-IN"),
+        siteId: site.id,
+        siteLabel: `[${site.code}] ${site.name}`,
+        staffName: `${loggedInUser.name} (${loggedInUser.role} - ${loggedInUser.id})`,
+        category: category,
+        complaintText: text,
+        photo: compressedPhotoData || "",
+        status: "Pending Admin Action"
+      };
+
+      complaintsList.unshift(newComp);
+      await pushToCloud(false);
+
+      // Reset form
+      document.getElementById("compTextInput").value = "";
+      document.getElementById("compPhotoInput").value = "";
+      compressedPhotoData = "";
+      document.getElementById("photoPreviewWrap").classList.add("hidden");
+
+      renderStaffComplaintsView();
+      alert("✅ आपकी शिकायत और फोटो सफलतापूर्वक भेज दी गई है! Admin और आपके अधिकारी इसे देख लेंगे।");
+    }
+
+    function openPhotoModal(imgSrc, title, caption) {
+      document.getElementById("photoModalImg").src = imgSrc;
+      document.getElementById("photoModalTitle").innerText = title;
+      document.getElementById("photoModalCaption").innerText = caption;
+      document.getElementById("photoModal").classList.remove("hidden");
+    }
+
+    function closePhotoModal() {
+      document.getElementById("photoModal").classList.add("hidden");
+    }
+
+    // ADMIN COMPLAINTS RENDER (WITH EDIT & DELETE POWER)
+    function renderAdminComplaints() {
+      const tbody = document.getElementById("adminComplaintsBody");
+      tbody.innerHTML = "";
+      if (complaintsList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b;">अभी किसी साइट से कोई शिकायत दर्ज नहीं हुई है।</td></tr>`;
+        return;
+      }
+
+      complaintsList.forEach((c, idx) => {
+        const photoHtml = c.photo
+          ? `<img src="${c.photo}" class="thumb-img" onclick="openPhotoModal('${c.photo}', '${c.siteLabel}', '${c.complaintText.replace(/'/g, "")}')" title="बड़ा देखने के लिए टच करें">`
+          : `<span class="badge badge-warn">No Photo</span>`;
+
+        const statusBadge = c.status.includes("Resolved")
+          ? `<span class="badge badge-success">${c.status}</span>`
+          : `<span class="badge badge-danger">${c.status}</span>`;
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.time}</td>
+            <td><b>${c.siteLabel}</b></td>
+            <td>${c.staffName}</td>
+            <td>${photoHtml}</td>
+            <td><b>[${c.category}]</b><br>${c.complaintText}</td>
+            <td>${statusBadge}</td>
+            <td>
+              <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                <button class="btn btn-blue btn-sm" onclick="adminEditComplaint(${idx})">✏️ Edit / Status</button>
+                <button class="btn btn-red btn-sm" onclick="adminDeleteComplaint(${idx})">🗑️ Delete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // STRICT ADMIN-ONLY EDIT & DELETE FUNCTIONS FOR COMPLAINTS
+    async function adminEditComplaint(index) {
+      if (!loggedInUser || loggedInUser.role !== "Admin") {
+        alert("❌ केवल Admin ही इसे एडिट कर सकता है!");
+        return;
+      }
+      const c = complaintsList[index];
+      const newText = prompt("शिकायत विवरण एडिट करें:", c.complaintText);
+      if (newText === null) return;
+      const newStatus = prompt("स्टेटस या Admin रिमार्क अपडेट करें (उदा. Resolved by Admin / Action Taken):", c.status);
+      if (newStatus === null) return;
+
+      complaintsList[index].complaintText = newText.trim() || c.complaintText;
+      complaintsList[index].status = newStatus.trim() || c.status;
+      await pushToCloud(false);
+      renderAdminComplaints();
+    }
+
+    async function adminDeleteComplaint(index) {
+      if (!loggedInUser || loggedInUser.role !== "Admin") {
+        alert("❌ केवल Admin ही इसे डिलीट कर सकता है!");
+        return;
+      }
+      if (!confirm("क्या आप वाकई इस शिकायत और फोटो को हमेशा के लिए डिलीट करना चाहते हैं?")) return;
+      complaintsList.splice(index, 1);
+      await pushToCloud(false);
+      renderAdminComplaints();
+    }
+
+    // STAFF VIEW-ONLY COMPLAINTS RENDER (NO EDIT OR DELETE BUTTONS)
+    function renderStaffComplaintsView() {
+      const tbody = document.getElementById("staffComplaintsViewBody");
+      tbody.innerHTML = "";
+      const myComplaints = complaintsList.filter(c => loggedInUser.assignedSites.includes(c.siteId));
+
+      if (myComplaints.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">आपकी आवंटित साइट्स पर कोई शिकायत नहीं है।</td></tr>`;
+        return;
+      }
+
+      myComplaints.forEach(c => {
+        const photoHtml = c.photo
+          ? `<img src="${c.photo}" class="thumb-img" onclick="openPhotoModal('${c.photo}', '${c.siteLabel}', '${c.complaintText.replace(/'/g, "")}')">`
+          : `<span class="badge badge-warn">No Photo</span>`;
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.time}</td>
+            <td><b>${c.siteLabel}</b></td>
+            <td>${c.staffName}</td>
+            <td>${photoHtml}</td>
+            <td><b>[${c.category}]</b><br>${c.complaintText}</td>
+            <td><span class="badge badge-info">${c.status}</span></td>
+          </tr>
+        `;
+      });
     }
 
     // ================= ADMIN: SITES MANAGEMENT =================
@@ -637,7 +1073,7 @@
       }, () => alert("कृपया अपने मोबाइल का Location (GPS) ऑन करें।"), { enableHighAccuracy: true });
     }
 
-    function createNewSite() {
+    async function createNewSite() {
       const code = document.getElementById("siteCode").value.trim();
       const name = document.getElementById("siteName").value.trim();
       const lat = parseFloat(document.getElementById("siteLat").value);
@@ -650,19 +1086,19 @@
 
       const newId = "SITE_" + Date.now();
       siteList.push({ id: newId, code, name, lat, lng });
-      saveAllStorage();
+      await pushToCloud(false);
 
       document.getElementById("siteCode").value = "";
       document.getElementById("siteName").value = "";
       renderSitesTable();
       renderSiteCheckboxes();
-      alert(`साइट "${code} - ${name}" सफलतापूर्वक जोड़ दी गई!`);
+      alert(`✅ साइट "${code} - ${name}" सफलतापूर्वक जोड़ दी गई!`);
     }
 
-    function deleteSite(index) {
+    async function deleteSite(index) {
       if (!confirm("क्या आप वाकई इस साइट को हटाना चाहते हैं?")) return;
       siteList.splice(index, 1);
-      saveAllStorage();
+      await pushToCloud(false);
       renderSitesTable();
       renderSiteCheckboxes();
     }
@@ -688,7 +1124,7 @@
       const container = document.getElementById("siteCheckboxList");
       container.innerHTML = "";
       if (siteList.length === 0) {
-        container.innerHTML = "<p style='font-size:12px; color:#dc2626;'>पहले 'सभी साइट्स मैनेज करें' टैब में जाकर साइट्स जोड़ें।</p>";
+        container.innerHTML = "<p style='font-size:12px; color:#dc2626;'>पहले 'सभी साइट्स' टैब में जाकर साइट्स जोड़ें।</p>";
         return;
       }
       siteList.forEach(s => {
@@ -716,7 +1152,7 @@
       });
     }
 
-    function saveStaffMember() {
+    async function saveStaffMember() {
       const name = document.getElementById("stName").value.trim();
       const role = document.getElementById("stRole").value;
       const userId = document.getElementById("stUserId").value.trim();
@@ -734,7 +1170,6 @@
         return;
       }
 
-      // Check duplicate User ID
       const duplicate = staffList.findIndex((s, idx) => s.userId.toLowerCase() === userId.toLowerCase() && idx !== editIdx);
       if (duplicate !== -1 || userId.toLowerCase() === adminCreds.id.toLowerCase()) {
         alert("यह User ID पहले से किसी और को दी गई है। कृपया अलग User ID रखें।");
@@ -751,7 +1186,7 @@
         alert(`✅ "${name}" का विवरण और साइट आवंटन अपडेट हो गया!`);
       }
 
-      saveAllStorage();
+      await pushToCloud(false);
       resetStaffForm();
       renderStaffTable();
     }
@@ -779,10 +1214,10 @@
       renderSiteCheckboxes([]);
     }
 
-    function deleteStaffMember(index) {
+    async function deleteStaffMember(index) {
       if (!confirm("क्या आप इस स्टाफ की लॉगिन ID हटाना चाहते हैं?")) return;
       staffList.splice(index, 1);
-      saveAllStorage();
+      await pushToCloud(false);
       renderStaffTable();
     }
 
@@ -790,7 +1225,7 @@
       const tbody = document.getElementById("staffTableBody");
       tbody.innerHTML = "";
       if (staffList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">अभी कोई स्टाफ ID नहीं बनाई गई है। ऊपर फॉर्म से पहली ID बनाएं।</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">अभी कोई स्टाफ ID नहीं बनाई गई है।</td></tr>`;
         return;
       }
       staffList.forEach((st, idx) => {
@@ -807,29 +1242,37 @@
             <td>${st.userPass}</td>
             <td><b>(${st.assignedSites.length} साइट्स):</b><br>${mappedNames || "कोई साइट नहीं"}</td>
             <td>
-              <button class="btn btn-blue btn-sm" onclick="editStaffMember(${idx})">✏️ साइट्स/ID बदलें</button>
-              <button class="btn btn-red btn-sm" onclick="deleteStaffMember(${idx})">🗑️</button>
+              <button class="btn btn-blue btn-sm" onclick="editStaffMember(${idx})">✏️ Edit</button>
+              <button class="btn btn-red btn-sm" onclick="deleteStaffMember(${idx})">🗑️ Delete</button>
             </td>
           </tr>
         `;
       });
     }
 
-    // ================= STAFF FILTERED VIEW (ONLY ASSIGNED SITES) =================
+    // ================= STAFF ALLOCATED VIEW & ATTENDANCE =================
     function setupStaffAllocatedView() {
       const mySites = siteList.filter(s => loggedInUser.assignedSites.includes(s.id));
-      document.getElementById("assignedCountBadge").innerText = `${mySites.length} Sites Assigned to You`;
+      document.getElementById("assignedCountBadge").innerText = `${mySites.length} Sites Assigned`;
 
-      const select = document.getElementById("staffSiteDropdown");
-      select.innerHTML = "";
+      const selectAtt = document.getElementById("staffSiteDropdown");
+      const selectComp = document.getElementById("compSiteDropdown");
+      selectAtt.innerHTML = "";
+      selectComp.innerHTML = "";
+
       if (mySites.length === 0) {
-        select.innerHTML = `<option value="">कोई साइट आवंटित नहीं है</option>`;
+        const opt = `<option value="">कोई साइट आवंटित नहीं है</option>`;
+        selectAtt.innerHTML = opt;
+        selectComp.innerHTML = opt;
       } else {
         mySites.forEach(s => {
-          select.innerHTML += `<option value="${s.id}">[${s.code}] ${s.name}</option>`;
+          const opt = `<option value="${s.id}">[${s.code}] ${s.name}</option>`;
+          selectAtt.innerHTML += opt;
+          selectComp.innerHTML += opt;
         });
       }
       resetGuardGpsState();
+      renderStaffComplaintsView();
       renderStaffFilteredLogs();
     }
 
@@ -837,7 +1280,7 @@
       verifiedDistance = null;
       document.getElementById("btnStaffDutyIn").disabled = true;
       document.getElementById("btnStaffDutyOut").disabled = true;
-      document.getElementById("gpsVerifyBox").innerHTML = `📍 <b>GPS वेरिफिकेशन:</b> ड्यूटी या रिपोर्ट सबमिट करने के लिए पहले नीचे "📍 अपनी GPS लोकेशन वेरिफाई करें" बटन दबाएं।`;
+      document.getElementById("gpsVerifyBox").innerHTML = `📍 <b>GPS वेरिफिकेशन:</b> ड्यूटी सबमिट करने के लिए पहले नीचे "📍 अपनी GPS लोकेशन वेरिफाई करें" बटन दबाएं।`;
     }
 
     function calcMeters(lat1, lon1, lat2, lon2) {
@@ -860,7 +1303,6 @@
         const dist = calcMeters(pos.coords.latitude, pos.coords.longitude, site.lat, site.lng);
         verifiedDistance = dist;
 
-        // Strict 50m rule for Guard; Managers/Officers can report from field with distance logged
         if (loggedInUser.role === "Security Guard" && dist > 50) {
           box.innerHTML = `❌ <b>लोकेशन बाहर है!</b> आप <b>${site.name}</b> से <b>${dist} मीटर</b> दूर हैं। गार्ड हाजिरी के लिए साइट के <b>50 मीटर</b> के दायरे में होना अनिवार्य है।`;
           document.getElementById("btnStaffDutyIn").disabled = true;
@@ -875,7 +1317,7 @@
       }, { enableHighAccuracy: true });
     }
 
-    function submitStaffEntry(actionType) {
+    async function submitStaffEntry(actionType) {
       const selId = document.getElementById("staffSiteDropdown").value;
       const site = siteList.find(s => s.id === selId);
       if (!site) return;
@@ -895,7 +1337,7 @@
         approved: loggedInUser.role === "Security Guard" ? "Pending" : "Verified"
       });
 
-      saveAllStorage();
+      await pushToCloud(false);
       document.getElementById("staffRemarkInput").value = "";
       renderStaffFilteredLogs();
       alert("✅ आपकी एंट्री सफलतापूर्वक दर्ज हो गई!");
@@ -904,7 +1346,6 @@
     function renderStaffFilteredLogs() {
       const tbody = document.getElementById("staffFilteredLogsBody");
       tbody.innerHTML = "";
-      // ONLY show logs belonging to sites assigned to this loggedInUser
       const myLogs = activityLogs.filter(l => loggedInUser.assignedSites.includes(l.siteId));
 
       if (myLogs.length === 0) {
@@ -926,19 +1367,15 @@
       });
     }
 
-    // ================= ADMIN REPORTS & SECURITY =================
+    // ================= ADMIN ATTENDANCE LOGS (WITH EDIT / DELETE POWER) =================
     function renderAdminLogs() {
       const tbody = document.getElementById("adminLogsBody");
       tbody.innerHTML = "";
       if (activityLogs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">अभी कोई रिकॉर्ड दर्ज नहीं है।</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b;">अभी कोई रिकॉर्ड दर्ज नहीं है।</td></tr>`;
         return;
       }
       activityLogs.forEach((l, i) => {
-        const approveBtn = l.approved === "Pending"
-          ? `<button class="btn btn-green btn-sm" onclick="approveAttendance(${i})">Approve करें</button>`
-          : `<span class="badge badge-success">${l.approved}</span>`;
-
         tbody.innerHTML += `
           <tr>
             <td>${l.time}</td>
@@ -946,30 +1383,55 @@
             <td>${l.siteLabel}</td>
             <td>${l.action}</td>
             <td><span class="badge badge-info">${l.gps}</span></td>
-            <td>${l.remark}<br>${approveBtn}</td>
+            <td>${l.remark} <span class="badge badge-success">${l.approved}</span></td>
+            <td>
+              <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                <button class="btn btn-green btn-sm" onclick="approveAttendance(${i})">✅ Approve</button>
+                <button class="btn btn-blue btn-sm" onclick="adminEditLog(${i})">✏️ Edit</button>
+                <button class="btn btn-red btn-sm" onclick="adminDeleteLog(${i})">🗑️ Delete</button>
+              </div>
+            </td>
           </tr>
         `;
       });
     }
 
-    function approveAttendance(idx) {
+    async function approveAttendance(idx) {
       activityLogs[idx].approved = "Approved by Admin";
-      saveAllStorage();
+      await pushToCloud(false);
       renderAdminLogs();
     }
 
-    function updateAdminCredentials() {
+    async function adminEditLog(idx) {
+      if (!loggedInUser || loggedInUser.role !== "Admin") return;
+      const l = activityLogs[idx];
+      const newRem = prompt("रिमार्क एडिट करें:", l.remark);
+      if (newRem === null) return;
+      activityLogs[idx].remark = newRem.trim() || l.remark;
+      await pushToCloud(false);
+      renderAdminLogs();
+    }
+
+    async function adminDeleteLog(idx) {
+      if (!loggedInUser || loggedInUser.role !== "Admin") return;
+      if (!confirm("क्या आप इस हाजिरी रिकॉर्ड को डिलीट करना चाहते हैं?")) return;
+      activityLogs.splice(idx, 1);
+      await pushToCloud(false);
+      renderAdminLogs();
+    }
+
+    async function updateAdminCredentials() {
       const nid = document.getElementById("newAdminId").value.trim();
       const npass = document.getElementById("newAdminPass").value.trim();
       if (!nid || !npass) return alert("User ID और Password खाली नहीं हो सकते।");
       adminCreds.id = nid;
       adminCreds.pass = npass;
-      saveAllStorage();
+      await pushToCloud(false);
       alert(`✅ आपका नया Admin ID: "${nid}" और नया Password सेव हो गया है!`);
     }
 
     function shareWhatsAppSummary() {
-      let msg = `*ASSURANCE SECURITY - REPORT*%0A`;
+      let msg = `*ASSURANCE SECURITY - LIVE REPORT*%0A`;
       activityLogs.slice(0, 10).forEach((l, i) => {
         msg += `${i+1}. *${l.staffName}*%0A📍 ${l.siteLabel} (${l.gps})%0A📝 ${l.action} - ${l.remark}%0A🕒 ${l.time}%0A%0A`;
       });
