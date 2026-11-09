@@ -66,13 +66,95 @@ function allowedTabs(){let base=["overview","attendance","complaints"];if(profil
 const labels={overview:"Overview",attendance:"Attendance",complaints:"Complaints",sites:"Manage Sites",staff:"Manage Staff",allrecords:"Records"};
 function renderTabs(){$("tabs").innerHTML="";allowedTabs().forEach(t=>{let b=document.createElement("button");b.className="btn";b.textContent=labels[t];b.onclick=()=>showTab(t);$("tabs").appendChild(b)})}
 function showTab(t){activeTab=t;[...$("tabs").children].forEach((b,i)=>b.classList.toggle("active",allowedTabs()[i]===t));let p=$("panel");p.innerHTML="";
- if(t==="overview"){p.innerHTML=`<div class="card"><h3>Dashboard</h3><p>Signed in as <b>${esc(profile.name||currentUser.email)}</b> (${esc(profile.role)}).</p><p class="muted">Use the tabs to record attendance, submit complaints or view permitted records.</p></div>`}
+ if(t==="overview"){adminDashboard(p)}
  if(t==="attendance")attendanceForm(p);
  if(t==="complaints")complaintForm(p);
  if(t==="sites")siteForm(p);
  if(t==="staff")staffForm(p);
  if(t==="allrecords")recordsView(p);
 }
+
+async function adminDashboard(p){
+ if(profile.role!=="Admin"){
+  p.innerHTML=`<div class="card"><h3>Dashboard</h3><p>Signed in as <b>${esc(profile.name||currentUser.email)}</b> (${esc(profile.role)}).</p><p class="muted">Use the tabs to record attendance, submit complaints or view permitted records.</p></div>`;
+  return;
+ }
+ p.innerHTML=`<div class="card"><div class="row" style="align-items:center"><div><h3>Admin Live Dashboard</h3><p class="muted">Company attendance and site summary for today</p></div><button class="btn" id="refreshDashboard" style="flex:0 0 auto">Refresh Report</button></div>
+ <div class="grid">
+  <div class="card"><h3>Total Sites</h3><div id="dashSites" style="font-size:30px;font-weight:bold">—</div></div>
+  <div class="card"><h3>Total Staff</h3><div id="dashStaff" style="font-size:30px;font-weight:bold">—</div></div>
+  <div class="card"><h3>Total Guards</h3><div id="dashGuards" style="font-size:30px;font-weight:bold">—</div></div>
+  <div class="card"><h3>Present Today</h3><div id="dashPresent" style="font-size:30px;font-weight:bold;color:#16834a">—</div></div>
+  <div class="card"><h3>Absent Today</h3><div id="dashAbsent" style="font-size:30px;font-weight:bold;color:#c62828">—</div></div>
+  <div class="card"><h3>Currently On Duty</h3><div id="dashOnDuty" style="font-size:30px;font-weight:bold">—</div></div>
+ </div></div>
+ <div class="card"><h3>Today's Guard Attendance</h3><p class="muted">Present means a guard has checked in today and has not checked out afterwards.</p><div id="dashAttendance">Loading attendance…</div></div>
+ <div class="card"><h3>Site-wise Guard Deployment</h3><div id="dashSiteRows">Loading sites…</div></div>
+ <div class="card"><h3>Staff Under Admin</h3><div id="dashStaffRows">Loading staff…</div></div>
+ <div class="notice"><b>Geofencing note:</b> The site form currently saves an address, not map coordinates. The dashboard can show whether GPS was captured at check-in, but it cannot reliably label a guard Inside/Outside the site boundary until coordinates and a geofence radius are configured for each site.</div>`;
+ $("refreshDashboard").onclick=()=>loadAdminDashboard();
+ await loadAdminDashboard();
+}
+async function loadAdminDashboard(){
+ const set=(id,v)=>{if($(id))$(id).textContent=String(v)};
+ ["dashSites","dashStaff","dashGuards","dashPresent","dashAbsent","dashOnDuty"].forEach(id=>set(id,"…"));
+ try{
+  const [siteSnap,userSnap,attSnap]=await Promise.all([
+   db.ref("sites").once("value"),
+   db.ref("users").once("value"),
+   db.ref("attendance").once("value")
+  ]);
+  const sitesObj=siteSnap.val()||{}, usersObj=userSnap.val()||{}, attendanceObj=attSnap.val()||{};
+  const sites=Object.entries(sitesObj).map(([id,x])=>({id,...(x||{})}));
+  const users=Object.entries(usersObj).map(([uid,x])=>({uid,...(x||{})}));
+  const guards=users.filter(u=>u.role==="Security Guard");
+  const today=new Date();today.setHours(0,0,0,0);const start=today.getTime();
+  const events=Object.entries(attendanceObj).map(([id,x])=>({id,...(x||{})})).filter(x=>Number(x.timestamp||0)>=start);
+  const guardEvents=events.filter(e=>e.uid && guards.some(g=>g.uid===e.uid));
+  const latestByGuard={};
+  guardEvents.sort((a,b)=>(a.timestamp||0)-(b.timestamp||0)).forEach(e=>{latestByGuard[e.uid]=e});
+  const presentGuards=guards.filter(g=>latestByGuard[g.uid] && latestByGuard[g.uid].action==="CHECK_IN");
+  const absentGuards=guards.filter(g=>!latestByGuard[g.uid] || latestByGuard[g.uid].action!=="CHECK_IN");
+  const onDuty=presentGuards.length;
+  set("dashSites",sites.length);set("dashStaff",users.filter(u=>u.role!=="Admin").length);
+  set("dashGuards",guards.length);set("dashPresent",presentGuards.length);
+  set("dashAbsent",absentGuards.length);set("dashOnDuty",onDuty);
+
+  const siteMap=Object.fromEntries(sites.map(s=>[s.id,s]));
+  const userMap=Object.fromEntries(users.map(u=>[u.uid,u]));
+  const attendanceEl=$("dashAttendance");
+  if(attendanceEl){
+   const rows=guards.map(g=>{
+    const ev=latestByGuard[g.uid], site=ev?siteMap[ev.siteId]:null;
+    const status=ev?(ev.action==="CHECK_IN"?"Present / Checked In":"Checked Out"):"Absent";
+    const gps=ev&&ev.gps?`GPS captured (±${Math.round(ev.gps.accuracy||0)} m)`:"GPS not captured";
+    const time=ev&&ev.timestamp?new Date(ev.timestamp).toLocaleTimeString():"—";
+    return `<tr><td>${esc(g.name||g.email||g.uid)}</td><td>${esc(site?site.name:(g.assignedSites||[]).map(id=>siteMap[id]?.name||id).join(", ")||"Not assigned")}</td><td>${status}</td><td>${time}</td><td>${gps}</td></tr>`;
+   });
+   attendanceEl.innerHTML=rows.length?`<div class="tablewrap"><table><tr><th>Guard</th><th>Site</th><th>Today's Status</th><th>Last Time</th><th>Location</th></tr>${rows.join("")}</table></div>`:"No Security Guard accounts found. Create guard accounts in Manage Staff.";
+  }
+  const siteEl=$("dashSiteRows");
+  if(siteEl){
+   siteEl.innerHTML=sites.length?`<div class="tablewrap"><table><tr><th>Protection No.</th><th>Site</th><th>Address</th><th>Site In-charge</th><th>Assigned Guards</th><th>Present Today</th></tr>${sites.map(s=>{
+    const incharge=userMap[s.inchargeId];
+    const assigned=guards.filter(g=>(g.assignedSites||[]).includes(s.id)||g.siteId===s.id);
+    const present=assigned.filter(g=>latestByGuard[g.uid]&&latestByGuard[g.uid].action==="CHECK_IN").length;
+    return `<tr><td>${esc(s.code||"—")}</td><td>${esc(s.name||"—")}</td><td>${esc(s.address||"—")}</td><td>${esc(s.inchargeName||incharge?.name||"Not assigned")}</td><td>${assigned.length}</td><td>${present}</td></tr>`;
+   }).join("")}</table></div>`:"No sites have been added yet.";
+  }
+  const staffEl=$("dashStaffRows");
+  if(staffEl){
+   staffEl.innerHTML=users.length?`<div class="tablewrap"><table><tr><th>Name</th><th>Role</th><th>Email / Login ID</th><th>Assigned Sites</th><th>Manager</th></tr>${users.map(u=>{
+    const assigned=(u.assignedSites||[]).map(id=>siteMap[id]?.name||id).join(", ")|| (u.siteId&&siteMap[u.siteId]?.name)||"—";
+    return `<tr><td>${esc(u.name||"—")}</td><td>${esc(u.role||"—")}</td><td>${esc(u.email||"—")}</td><td>${esc(assigned)}</td><td>${esc(u.managerName||u.managerId||"—")}</td></tr>`;
+   }).join("")}</table></div>`:"No staff profiles found.";
+  }
+ }catch(e){
+  ["dashAttendance","dashSiteRows","dashStaffRows"].forEach(id=>{if($(id))$(id).innerHTML=`<p class="notice">Could not load this report: ${esc(niceError(e))}. Check Firebase Realtime Database read rules for Admin.</p>`});
+  ["dashSites","dashStaff","dashGuards","dashPresent","dashAbsent","dashOnDuty"].forEach(id=>set(id,"—"));
+ }
+}
+
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 async function getSites(){let s=await db.ref("sites").once("value");let v=s.val()||{};return Object.entries(v).map(([id,x])=>({id,...x}))}
 function siteOptions(sites){let seen=new Set();return sites.filter(s=>{let k=String(s.code||"").trim().toLowerCase()||String(s.name||"").trim().toLowerCase();if(seen.has(k))return false;seen.add(k);return true}).map(s=>`<option value="${esc(s.id)}">${esc(s.name)} (${esc(s.code||"")})</option>`).join("")}
