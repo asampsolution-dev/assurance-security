@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -30,18 +30,18 @@ footer{text-align:center;background:var(--navy);color:#dbeafe;padding:18px;font-
 <main>
 <section id="public">
  <div class="hero"><h2>Security & Manpower Services</h2><p>Security Guards • Manpower Supply • CCTV / Security Systems</p><a class="btn green" href="https://wa.me/917890232318" target="_blank" rel="noopener">WhatsApp Enquiry</a></div>
- <div class="card"><h3>हमारी सेवाएँ</h3><div class="grid">
-  <div class="service"><b>Security Guards</b><p>सुरक्षा गार्ड और साइट सुरक्षा सेवाएँ।</p></div>
-  <div class="service"><b>Manpower Supply</b><p>आवश्यकतानुसार मैनपावर सप्लाई।</p></div>
-  <div class="service"><b>CCTV / Security Systems</b><p>CCTV और सुरक्षा सिस्टम से जुड़ी सेवाएँ।</p></div>
+ <div class="card"><h3>Our Services</h3><div class="grid">
+  <div class="service"><b>Security Guards</b><p>Security guards and on-site protection services.</p></div>
+  <div class="service"><b>Manpower Supply</b><p>Manpower supply according to your requirements.</p></div>
+  <div class="service"><b>CCTV / Security Systems</b><p>CCTV and security system services.</p></div>
  </div></div>
- <div class="card"><h3>सेवा क्षेत्र और संपर्क</h3><p>Kolkata • Malda • Siliguri • Sikkim</p><p><b>Registered Office:</b> Makhaltalla, Durgapur, Bally, Howrah, West Bengal - 711205</p><p>Phone / WhatsApp: <a href="tel:+917890232318">+91 7890232318</a></p><p>Email: <a href="mailto:info@asampsolution.com">info@asampsolution.com</a></p></div>
+ <div class="card"><h3>Service Areas & Contact</h3><p>Kolkata • Malda • Siliguri • Sikkim</p><p><b>Registered Office:</b> Makhaltalla, Durgapur, Bally, Howrah, West Bengal - 711205</p><p>Phone / WhatsApp: <a href="tel:+917890232318">+91 7890232318</a></p><p>Email: <a href="mailto:info@asampsolution.com">info@asampsolution.com</a></p></div>
 </section>
 
 <section id="loginPanel" class="card hidden">
- <h3>Staff Login</h3><p class="muted">Firebase Authentication में बनाया गया ईमेल और पासवर्ड डालें।</p>
- <label>Email</label><input id="email" type="email" autocomplete="username" placeholder="आपका लॉगिन ईमेल">
- <label>Password</label><input id="password" type="password" autocomplete="current-password" placeholder="पासवर्ड">
+ <h3>Staff Login</h3><p class="muted">Firebase Authentication में बनाया गया ईमेल और Password डालें।</p>
+ <label>Email</label><input id="email" type="email" autocomplete="username" placeholder="Your login email">
+ <label>Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Password">
  <p><button class="primary" id="loginBtn">Login</button> <button id="cancelLogin">Cancel</button></p>
  <p id="loginMsg" class="muted" aria-live="polite"></p>
 </section>
@@ -49,33 +49,33 @@ footer{text-align:center;background:var(--navy);color:#dbeafe;padding:18px;font-
 <section id="app" class="hidden">
  <div class="card"><b id="welcome"></b> <span id="role" class="muted"></span><button class="red" id="logout" style="float:right">Logout</button><div id="status" class="muted"></div></div>
  <div class="tabs" id="tabs">
-  <button data-tab="attendance" class="active">हाजिरी</button><button data-tab="complaint">शिकायत भेजें</button><button data-tab="records">रिकॉर्ड देखें</button><button data-tab="admin" id="adminTab" class="hidden">Admin</button>
+  <button data-tab="attendance" class="active">Attendance</button><button data-tab="complaint">Submit Complaint</button><button data-tab="records">View Records</button><button data-tab="admin" id="adminTab" class="hidden">Admin</button>
  </div>
  <div id="attendance" class="card tabcontent">
-  <h3>ड्यूटी हाजिरी</h3><label>साइट चुनें</label><select id="attSite"></select>
-  <label>शिफ्ट / विवरण</label><input id="shift" placeholder="जैसे Day Shift">
-  <label>रिमार्क</label><input id="attRemark" placeholder="ड्यूटी पर उपस्थित">
+  <h3>ड्यूटी Attendance</h3><label>Select Site</label><select id="attSite"></select>
+  <label>Shift / Details</label><input id="shift" placeholder="e.g. Day Shift">
+  <label>Remarks</label><input id="attRemark" placeholder="Present on duty">
   <button class="green" id="dutyIn">DUTY IN</button> <button class="red" id="dutyOut">DUTY OUT</button>
-  <p class="muted">GPS अनुमति आवश्यक है। यह ब्राउज़र-आधारित लोकेशन रिकॉर्ड है; वास्तविक 50 मीटर सुरक्षा-जाँच के लिए सर्वर-साइड सत्यापन अभी जोड़ना बाकी है।</p>
+  <p class="muted">GPS permission is required. This records browser-provided location; server-side verification is still required for reliable 50-metre geofencing.</p>
  </div>
  <div id="complaint" class="card tabcontent hidden">
-  <h3>फोटो के साथ शिकायत</h3><label>साइट</label><select id="compSite"></select>
-  <label>शिकायत विवरण</label><textarea id="compText" placeholder="समस्या का पूरा विवरण"></textarea>
-  <label>फोटो</label><input id="compPhoto" type="file" accept="image/*" capture="environment">
-  <button class="red" id="sendComplaint">शिकायत सबमिट करें</button>
+  <h3>Photo के साथ शिकायत</h3><label>Site</label><select id="compSite"></select>
+  <label>Complaint Details</label><textarea id="compText" placeholder="समस्या का पूरा Details"></textarea>
+  <label>Photo</label><input id="compPhoto" type="file" accept="image/*" capture="environment">
+  <button class="red" id="sendComplaint">Submit Complaint</button>
  </div>
- <div id="records" class="card tabcontent hidden"><h3>हाजिरी और शिकायत रिकॉर्ड</h3><div class="tablewrap"><table><thead><tr><th>समय</th><th>साइट</th><th>स्टाफ</th><th>विवरण</th></tr></thead><tbody id="recordsBody"></tbody></table></div></div>
+ <div id="records" class="card tabcontent hidden"><h3>Attendance और शिकायत रिकॉर्ड</h3><div class="tablewrap"><table><thead><tr><th>Time</th><th>Site</th><th>Staff</th><th>Details</th></tr></thead><tbody id="recordsBody"></tbody></table></div></div>
  <div id="admin" class="card tabcontent hidden">
-  <h3>Admin - साइट प्रबंधन</h3><div class="notice">नए स्टाफ अकाउंट Firebase Console → Authentication → Users में बनाएँ। इस HTML में Admin पासवर्ड या Firebase Admin key नहीं रखी गई है।</div>
-  <label>साइट कोड</label><input id="siteCode" placeholder="SITE-01"><label>साइट नाम</label><input id="siteName" placeholder="साइट का नाम / पता">
+  <h3>Admin - Site प्रबंधन</h3><div class="notice">नए Staff अकाउंट Firebase Console → Authentication → Users में बनाएँ। इस HTML में Admin Password या Firebase Admin key नहीं रखी गई है।</div>
+  <label>Site कोड</label><input id="siteCode" placeholder="SITE-01"><label>Site Name</label><input id="siteName" placeholder="Site का Name / पता">
   <label>Latitude</label><input id="siteLat" type="number" step="any"><label>Longitude</label><input id="siteLng" type="number" step="any">
-  <button class="primary" id="addSite">साइट जोड़ें</button>
-  <h3>साइट सूची</h3><div id="siteList"></div>
-  <h3>स्टाफ प्रोफाइल सेट करें</h3><p class="muted">पहले Authentication में यूज़र बनाएं। फिर उसका UID, नाम और भूमिका यहाँ सेव करें।</p>
-  <label>Firebase Auth UID</label><input id="staffUid" placeholder="Authentication Users से UID"><label>नाम</label><input id="staffName"><label>भूमिका</label><select id="staffRole"><option>Manager</option><option>Operating Officer</option><option>Site In-charge</option><option>Security Guard</option></select>
-  <label>आवंटित साइट IDs (कॉमा से अलग)</label><input id="staffSites" placeholder="SITE_ID_1,SITE_ID_2">
-  <button class="primary" id="saveStaff">स्टाफ प्रोफाइल सेव करें</button>
-  <p class="muted">Admin की भूमिका पहली बार Firebase Console में Database के users/आपके_AUTH_UID/role पर Admin सेट करके और नीचे दिए गए Database Rules लागू करके शुरू करनी होगी।</p>
+  <button class="primary" id="addSite">Site जोड़ें</button>
+  <h3>Site सूची</h3><div id="siteList"></div>
+  <h3>Staff प्रोफाइल सेट करें</h3><p class="muted">First create the user in Authentication. Then save their UID, name and role here.</p>
+  <label>Firebase Auth UID</label><input id="staffUid" placeholder="UID from Authentication Users"><label>Name</label><input id="staffName"><label>Role</label><select id="staffRole"><option>Manager</option><option>Operating Officer</option><option>Site In-charge</option><option>Security Guard</option></select>
+  <label>आवंटित Site IDs (कॉमा से अलग)</label><input id="staffSites" placeholder="SITE_ID_1,SITE_ID_2">
+  <button class="primary" id="saveStaff">Staff प्रोफाइल सेव करें</button>
+  <p class="muted">Admin की Role पहली बार Firebase Console में Database के users/आपके_AUTH_UID/role पर Admin सेट करके और नीचे दिए गए Database Rules लागू करके शुरू करनी होगी।</p>
  </div>
 </section>
 </main>
@@ -103,13 +103,13 @@ function msg(s){$("status").textContent=s}
 function esc(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 $("loginOpen").onclick=()=>{$("loginPanel").classList.remove("hidden");$("email").focus()};
 $("cancelLogin").onclick=()=> $("loginPanel").classList.add("hidden");
-$("loginBtn").onclick=async()=>{try{$("loginMsg").textContent="लॉगिन हो रहा है…";await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);$("loginMsg").textContent="";}catch(e){$("loginMsg").textContent="लॉगिन नहीं हुआ: "+e.message;}};
+$("loginBtn").onclick=async()=>{try{$("loginMsg").textContent="Signing in…";await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);$("loginMsg").textContent="";}catch(e){$("loginMsg").textContent="Login failed: "+e.message;}};
 $("logout").onclick=()=>signOut(auth);
 onAuthStateChanged(auth,async user=>{
  me=user; if(!user){$("app").classList.add("hidden");$("public").classList.remove("hidden");$("loginOpen").classList.remove("hidden");return;}
  try{
   const snap=await get(ref(db,"users/"+user.uid));profile=snap.val();
-  if(!profile||!profile.role){await signOut(auth);alert("आपकी प्रोफाइल/भूमिका Admin द्वारा सेट नहीं है।");return;}
+  if(!profile||!profile.role){await signOut(auth);alert("Your profile or role has not been configured by the Admin.");return;}
   $("public").classList.add("hidden");$("loginPanel").classList.add("hidden");$("loginOpen").classList.add("hidden");$("app").classList.remove("hidden");
   $("welcome").textContent=profile.name||user.email;$("role").textContent="("+profile.role+")";
   $("adminTab").classList.toggle("hidden",!isAdmin());
@@ -122,13 +122,13 @@ function allowedSites(){if(isAdmin())return Object.entries(sites);const ids=prof
 function fillSites(){for(const id of ["attSite","compSite"]){$(id).innerHTML=allowedSites().map(([k,v])=>`<option value="${esc(k)}">${esc(v.code||"")} - ${esc(v.name||"")}</option>`).join("");}}
 function showTab(id){document.querySelectorAll(".tabcontent").forEach(x=>x.classList.add("hidden"));$(id).classList.remove("hidden");document.querySelectorAll("#tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));}
 document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{if(b.dataset.tab!=="admin"||isAdmin())showTab(b.dataset.tab)});
-async function gps(){return new Promise((resolve,reject)=>{if(!navigator.geolocation)return reject(Error("GPS उपलब्ध नहीं"));navigator.geolocation.getCurrentPosition(p=>resolve({lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy}),reject,{enableHighAccuracy:true,timeout:15000});});}
-async function duty(action){try{const siteId=$("attSite").value;if(!siteId)throw Error("पहले साइट चुनें");const loc=await gps();await push(ref(db,"attendance")).then(async r=>set(r,{uid:me.uid,name:profile.name||me.email,role:profile.role,siteId,action,shift:$("shift").value,remark:$("attRemark").value,location:loc,createdAt:Date.now()}));msg(action+" दर्ज हो गया।");}catch(e){msg("हाजिरी नहीं हुई: "+e.message);}}
+async function gps(){return new Promise((resolve,reject)=>{if(!navigator.geolocation)return reject(Error("GPS is unavailable"));navigator.geolocation.getCurrentPosition(p=>resolve({lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy}),reject,{enableHighAccuracy:true,timeout:15000});});}
+async function duty(action){try{const siteId=$("attSite").value;if(!siteId)throw Error("पहले Select Site");const loc=await gps();await push(ref(db,"attendance")).then(async r=>set(r,{uid:me.uid,name:profile.name||me.email,role:profile.role,siteId,action,shift:$("shift").value,remark:$("attRemark").value,location:loc,createdAt:Date.now()}));msg(action+" दर्ज हो गया।");}catch(e){msg("Attendance नहीं हुई: "+e.message);}}
 $("dutyIn").onclick=()=>duty("DUTY IN");$("dutyOut").onclick=()=>duty("DUTY OUT");
-$("sendComplaint").onclick=async()=>{try{const siteId=$("compSite").value,text=$("compText").value.trim(),file=$("compPhoto").files[0];if(!siteId||!text)throw Error("साइट और शिकायत विवरण भरें");let photoUrl="";if(file){if(file.size>5*1024*1024)throw Error("फोटो 5 MB से छोटी रखें");const path="complaintPhotos/"+me.uid+"/"+Date.now()+"_"+file.name;const sr=storageRef(storage,path);await uploadBytes(sr,file);photoUrl=await getDownloadURL(sr);}await set(push(ref(db,"complaints")),{uid:me.uid,name:profile.name||me.email,siteId,text,photoUrl,status:"Pending",createdAt:Date.now()});$("compText").value="";$("compPhoto").value="";msg("शिकायत भेज दी गई।");}catch(e){msg("शिकायत नहीं भेजी गई: "+e.message);}};
-function renderRecords(){const rows=[];for(const [id,x] of Object.entries(allLogs)){if(isAdmin()||(profile?.assignedSites||[]).includes(x.siteId))rows.push({time:x.createdAt,site:x.siteId,name:x.name,detail:x.action+" "+(x.remark||"")});}for(const [id,x] of Object.entries(allComplaints)){if(isAdmin()||(profile?.assignedSites||[]).includes(x.siteId))rows.push({time:x.createdAt,site:x.siteId,name:x.name,detail:"शिकायत: "+x.text+(x.photoUrl?" (फोटो संलग्न)":"")});}rows.sort((a,b)=>(b.time||0)-(a.time||0));$("recordsBody").innerHTML=rows.map(x=>`<tr><td>${x.time?new Date(x.time).toLocaleString("hi-IN"):""}</td><td>${esc(sites[x.site]?.name||x.site)}</td><td>${esc(x.name)}</td><td>${esc(x.detail)}</td></tr>`).join("")||'<tr><td colspan="4">अभी कोई रिकॉर्ड नहीं है।</td></tr>';}
-function renderSites(){$("siteList").innerHTML=Object.entries(sites).map(([id,s])=>`<p>${esc(s.code)} - ${esc(s.name)} <small>(${esc(id)})</small></p>`).join("")||"कोई साइट नहीं।";}
-$("addSite").onclick=async()=>{try{if(!isAdmin())throw Error("केवल Admin");const code=$("siteCode").value.trim(),name=$("siteName").value.trim(),lat=Number($("siteLat").value),lng=Number($("siteLng").value);if(!code||!name||!Number.isFinite(lat)||!Number.isFinite(lng))throw Error("सभी साइट विवरण भरें");const r=push(ref(db,"sites"));await set(r,{code,name,lat,lng,radius:50,createdAt:Date.now()});$("siteCode").value=$("siteName").value=$("siteLat").value=$("siteLng").value="";msg("साइट जोड़ दी गई।");}catch(e){msg(e.message);}};
-$("saveStaff").onclick=async()=>{try{if(!isAdmin())throw Error("केवल Admin");const uid=$("staffUid").value.trim(),name=$("staffName").value.trim(),role=$("staffRole").value,assignedSites=$("staffSites").value.split(",").map(x=>x.trim()).filter(Boolean);if(!uid||!name)throw Error("UID और नाम भरें");await set(ref(db,"users/"+uid),{name,role,assignedSites});msg("स्टाफ प्रोफाइल सेव हो गई।");}catch(e){msg("सेव नहीं हुआ: "+e.message);}};
+$("sendComplaint").onclick=async()=>{try{const siteId=$("compSite").value,text=$("compText").value.trim(),file=$("compPhoto").files[0];if(!siteId||!text)throw Error("Site और Complaint Details भरें");let photoUrl="";if(file){if(file.size>5*1024*1024)throw Error("Photo 5 MB से छोटी रखें");const path="complaintPhotos/"+me.uid+"/"+Date.now()+"_"+file.name;const sr=storageRef(storage,path);await uploadBytes(sr,file);photoUrl=await getDownloadURL(sr);}await set(push(ref(db,"complaints")),{uid:me.uid,name:profile.name||me.email,siteId,text,photoUrl,status:"Pending",createdAt:Date.now()});$("compText").value="";$("compPhoto").value="";msg("Complaint submitted.");}catch(e){msg("Complaint submission failed: "+e.message);}};
+function renderRecords(){const rows=[];for(const [id,x] of Object.entries(allLogs)){if(isAdmin()||(profile?.assignedSites||[]).includes(x.siteId))rows.push({time:x.createdAt,site:x.siteId,name:x.name,detail:x.action+" "+(x.remark||"")});}for(const [id,x] of Object.entries(allComplaints)){if(isAdmin()||(profile?.assignedSites||[]).includes(x.siteId))rows.push({time:x.createdAt,site:x.siteId,name:x.name,detail:"शिकायत: "+x.text+(x.photoUrl?" (Photo संलग्न)":"")});}rows.sort((a,b)=>(b.time||0)-(a.time||0));$("recordsBody").innerHTML=rows.map(x=>`<tr><td>${x.time?new Date(x.time).toLocaleString("hi-IN"):""}</td><td>${esc(sites[x.site]?.name||x.site)}</td><td>${esc(x.name)}</td><td>${esc(x.detail)}</td></tr>`).join("")||'<tr><td colspan="4">No records available yet.</td></tr>';}
+function renderSites(){$("siteList").innerHTML=Object.entries(sites).map(([id,s])=>`<p>${esc(s.code)} - ${esc(s.name)} <small>(${esc(id)})</small></p>`).join("")||"कोई Site नहीं।";}
+$("addSite").onclick=async()=>{try{if(!isAdmin())throw Error("Admin only");const code=$("siteCode").value.trim(),name=$("siteName").value.trim(),lat=Number($("siteLat").value),lng=Number($("siteLng").value);if(!code||!name||!Number.isFinite(lat)||!Number.isFinite(lng))throw Error("सभी Site Details भरें");const r=push(ref(db,"sites"));await set(r,{code,name,lat,lng,radius:50,createdAt:Date.now()});$("siteCode").value=$("siteName").value=$("siteLat").value=$("siteLng").value="";msg("Site जोड़ दी गई।");}catch(e){msg(e.message);}};
+$("saveStaff").onclick=async()=>{try{if(!isAdmin())throw Error("Admin only");const uid=$("staffUid").value.trim(),name=$("staffName").value.trim(),role=$("staffRole").value,assignedSites=$("staffSites").value.split(",").map(x=>x.trim()).filter(Boolean);if(!uid||!name)throw Error("UID और Name भरें");await set(ref(db,"users/"+uid),{name,role,assignedSites});msg("Staff प्रोफाइल सेव हो गई।");}catch(e){msg("Save failed: "+e.message);}};
 </script>
 </body></html>
