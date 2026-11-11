@@ -20,7 +20,7 @@
 <div class="card"><h3>Service Areas</h3><p>Kolkata · Howrah · Malda · Siliguri · Sikkim</p><h3>Contact</h3><p>Phone: <a href="tel:+917890232318">+91 7890232318</a><br>Email: <a href="mailto:info@asampsolution.com">info@asampsolution.com</a><br>Address: Makhaltalla, Durgapur, Bally, Howrah, West Bengal - 711205</p></div>
 </main>
 
-<section id="loginView" class="wrap hidden"><div class="card" style="max-width:430px;margin:35px auto"><h3>Staff Portal Login</h3><label>Email</label><input id="loginEmail" type="email" autocomplete="username"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password"><p id="loginError" class="muted"></p><button class="btn" id="loginBtn">Sign In</button> <button class="btn gold" id="backBtn">Back</button><p class="muted">Login accounts are created by the company administrator. If sign-in fails, confirm that your email and password are registered in Firebase Authentication.</p></div></section>
+<section id="loginView" class="wrap hidden"><div class="card" style="max-width:430px;margin:35px auto"><h3>Staff Portal Login</h3><label>User Name</label><input id="loginEmail" type="text" autocomplete="username" placeholder="Enter your user name"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password"><p id="loginError" class="muted"></p><button class="btn" id="loginBtn">Sign In</button> <button class="btn gold" id="backBtn">Back</button><p class="muted">Login accounts are created by the company administrator. Enter your User Name and password. Existing accounts may continue using their registered email.</p></div></section>
 
 <section id="portal" class="wrap hidden">
 <div class="card"><div class="row" style="align-items:center"><div><h3 id="welcome">Staff Dashboard</h3><span id="roleText" class="muted"></span></div><button class="btn red" id="logoutBtn" style="flex:0 0 auto">Logout</button></div></div>
@@ -45,11 +45,13 @@ const firebaseConfig={
 firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(), db=firebase.database(), storage=firebase.storage();
 const $=id=>document.getElementById(id);
+function normalizeStaffUsername(value){return String(value||"").trim().toLowerCase().replace(/\s+/g,".").replace(/[^a-z0-9._-]/g,"")}
+function staffLoginEmail(value){const username=normalizeStaffUsername(value);return username?username+"@staff.asampsolution.com":""}
 let currentUser=null, profile=null, activeTab="overview";
 $("year").textContent=new Date().getFullYear();
 $("loginOpen").onclick=()=>{ $("publicView").classList.add("hidden");$("loginView").classList.remove("hidden"); };
 $("backBtn").onclick=()=>{ $("loginView").classList.add("hidden");$("publicView").classList.remove("hidden"); };
-$("loginBtn").onclick=async()=>{ $("loginError").textContent="Signing in…";try{await auth.signInWithEmailAndPassword($("loginEmail").value.trim(),$("loginPass").value)}catch(e){$("loginError").textContent=niceError(e)}};
+$("loginBtn").onclick=async()=>{ $("loginError").textContent="Signing in…";try{const loginValue=$("loginEmail").value.trim();const loginEmail=loginValue.includes("@")?loginValue:staffLoginEmail(loginValue);await auth.signInWithEmailAndPassword(loginEmail,$("loginPass").value)}catch(e){$("loginError").textContent=niceError(e)}};
 $("logoutBtn").onclick=()=>auth.signOut();
 function niceError(e){return e.code==="auth/invalid-credential"?"Email or password is incorrect.":e.message||"Something went wrong."}
 auth.onAuthStateChanged(async user=>{
@@ -186,8 +188,8 @@ async function siteDailyReportView(p){
  const guardsSnap=await db.ref("users").once("value"),users=guardsSnap.val()||{};
  const guards=Object.entries(users).filter(([uid,u])=>u&&u.role==="Security Guard"&&(((u.assignedSites||[]).includes(assigned[0].id))||u.siteId===assigned[0].id));
  p.innerHTML=`<div class="card"><h3>Daily Site Attendance & Labour Report</h3><p class="muted">Submit the attendance for the guards at your assigned site. Admin can view this report.</p><label>Site</label><select id="dailySite">${siteOptions(assigned)}</select><label>Report Date</label><input type="date" id="dailyDate" value="${new Date().toLocaleDateString('en-CA')}"><div id="guardAttendanceInputs"></div><div class="card" style="margin-top:12px"><h4>Reliever / Extra Labour</h4><p class="muted">Add a reliever or extra worker if someone is absent or additional manpower is needed.</p><div id="relieverRows"></div><button class="btn gold" type="button" id="addReliever">+ Add Reliever / Labour</button></div><label>Site Remarks</label><textarea id="dailyRemarks" placeholder="Optional daily site update"></textarea><button class="btn" id="submitDailySiteReport">Submit Daily Report</button><p class="muted" id="dailyReportStatus"></p></div>`;
- const renderGuards=async()=>{let sid=$("dailySite").value;let list=Object.entries(users).filter(([uid,u])=>u&&u.role==="Security Guard"&&(((u.assignedSites||[]).includes(sid))||u.siteId===sid));$("guardAttendanceInputs").innerHTML=`<h4>Assigned Guards (${list.length})</h4>`+(list.length?list.map(([uid,u])=>`<div class="row" style="align-items:center;border-bottom:1px solid #eee;padding:8px 0"><span style="flex:1">${esc(u.name||u.email||uid)}</span><select class="guardDailyStatus" data-uid="${esc(uid)}"><option value="Present">Present</option><option value="Absent">Absent</option><option value="Weekly Off">Weekly Off</option></select></div>`).join(""):'<p>No guards are assigned to this site in staff records.</p>')};
- let relievers=[];const renderRelievers=()=>{$("relieverRows").innerHTML=relievers.map((r,i)=>`<div class="card"><label>Reliever / Labour Name</label><input data-relief="name" data-i="${i}" value="${esc(r.name)}" placeholder="Worker name"><label>Replacing absent guard (optional)</label><select data-relief="replacing" data-i="${i}"><option value="">Select guard</option>${Object.entries(users).filter(([uid,u])=>u&&u.role==="Security Guard").map(([uid,u])=>`<option value="${esc(uid)}" ${r.replacing===uid?"selected":""}>${esc(u.name||u.email||uid)}</option>`).join("")}</select><label>Number of days</label><input type="number" min="1" step="1" data-relief="days" data-i="${i}" value="${esc(r.days||1)}"><label>Note (optional)</label><input data-relief="note" data-i="${i}" value="${esc(r.note)}" placeholder="Reason / shift"><button class="btn red" type="button" data-remove-relief="${i}">Remove</button></div>`).join("");$("relieverRows").querySelectorAll("[data-relief]").forEach(el=>el.onchange=()=>{relievers[Number(el.dataset.i)][el.dataset.relief]=el.value});$("relieverRows").querySelectorAll("[data-remove-relief]").forEach(el=>el.onclick=()=>{relievers.splice(Number(el.dataset.removeRelief),1);renderRelievers()})};
+ const renderGuards=async()=>{let sid=$("dailySite").value;let list=Object.entries(users).filter(([uid,u])=>u&&u.role==="Security Guard"&&(((u.assignedSites||[]).includes(sid))||u.siteId===sid));$("guardAttendanceInputs").innerHTML=`<h4>Assigned Guards (${list.length})</h4>`+(list.length?list.map(([uid,u])=>`<div class="row" style="align-items:center;border-bottom:1px solid #eee;padding:8px 0"><span style="flex:1">${esc(u.name||u.username||uid)}</span><select class="guardDailyStatus" data-uid="${esc(uid)}"><option value="Present">Present</option><option value="Absent">Absent</option><option value="Weekly Off">Weekly Off</option></select></div>`).join(""):'<p>No guards are assigned to this site in staff records.</p>')};
+ let relievers=[];const renderRelievers=()=>{$("relieverRows").innerHTML=relievers.map((r,i)=>`<div class="card"><label>Reliever / Labour Name</label><input data-relief="name" data-i="${i}" value="${esc(r.name)}" placeholder="Worker name"><label>Replacing absent guard (optional)</label><select data-relief="replacing" data-i="${i}"><option value="">Select guard</option>${Object.entries(users).filter(([uid,u])=>u&&u.role==="Security Guard").map(([uid,u])=>`<option value="${esc(uid)}" ${r.replacing===uid?"selected":""}>${esc(u.name||u.username||uid)}</option>`).join("")}</select><label>Number of days</label><input type="number" min="1" step="1" data-relief="days" data-i="${i}" value="${esc(r.days||1)}"><label>Note (optional)</label><input data-relief="note" data-i="${i}" value="${esc(r.note)}" placeholder="Reason / shift"><button class="btn red" type="button" data-remove-relief="${i}">Remove</button></div>`).join("");$("relieverRows").querySelectorAll("[data-relief]").forEach(el=>el.onchange=()=>{relievers[Number(el.dataset.i)][el.dataset.relief]=el.value});$("relieverRows").querySelectorAll("[data-remove-relief]").forEach(el=>el.onclick=()=>{relievers.splice(Number(el.dataset.removeRelief),1);renderRelievers()})};
  $("dailySite").onchange=renderGuards;$("addReliever").onclick=()=>{relievers.push({name:"",replacing:"",days:1,note:""});renderRelievers()};await renderGuards();
  $("submitDailySiteReport").onclick=async()=>{let sid=$("dailySite").value,dt=$("dailyDate").value;if(!sid||!dt)return alert("Select site and date.");if(!assigned.some(x=>x.id===sid))return alert("This site is not assigned to your login.");let statuses={};$("guardAttendanceInputs").querySelectorAll(".guardDailyStatus").forEach(el=>statuses[el.dataset.uid]=el.value);let cleanRelievers=relievers.map(x=>({name:String(x.name||"").trim(),replacing:x.replacing||"",days:Math.max(1,Number(x.days)||1),note:String(x.note||"").trim()}));if(cleanRelievers.some(x=>!x.name))return alert("Enter the name of each reliever / extra worker.");let report={siteId:sid,date:dt,guardStatus:statuses,reliefWorkers:cleanRelievers,remarks:$ ("dailyRemarks").value.trim(),submittedBy:currentUser.uid,submittedByName:profile.name||currentUser.email,updatedAt:firebase.database.ServerValue.TIMESTAMP};try{await db.ref(`siteDailyReports/${sid}/${dt}`).set(report);$("dailyReportStatus").textContent="Report submitted successfully.";alert("Daily site report submitted.")}catch(e){alert(niceError(e))}};
 }
@@ -218,7 +220,7 @@ async function siteForm(p){
  <label>Site Name</label><input id="siteName" placeholder="Enter site name">
  <label>Protection Number / Site Code</label><input id="siteCode" placeholder="Enter unique protection number">
  <label>Site Address</label><textarea id="siteAddress" placeholder="Enter complete site address"></textarea>\n <label>Company Billing Rate per Guard / Day (₹)</label><input id="siteClientRate" type="number" min="0" step="0.01" placeholder="Example: 500">
- <label>Site In-charge</label><select id="siteIncharge"><option value="">Select Site In-charge</option>${incharges.map(([uid,u])=>`<option value="${esc(uid)}">${esc(u.name||u.email||uid)}</option>`).join("")}</select>
+ <label>Site In-charge</label><select id="siteIncharge"><option value="">Select Site In-charge</option>${incharges.map(([uid,u])=>`<option value="${esc(uid)}">${esc(u.name||u.username||uid)}</option>`).join("")}</select>
  <button class="btn gold" id="captureSiteGps" type="button">Capture Site GPS Location (50 m Geofence)</button><p id="siteGpsMsg" class="muted">Stand at the actual site and capture its location. Coordinates are saved automatically; you do not need to type them.</p>
  <button class="btn" id="addSite">Save Site</button><p class="muted">Each site name and protection number must be unique.</p></div>
  <div class="card" id="siteList">Loading sites…</div>`;
@@ -264,7 +266,7 @@ async function staffForm(p){
  const siteChoices=sites.map(x=>`<label style="display:flex;align-items:center;gap:8px;font-weight:normal;margin:7px 0"><input type="checkbox" class="staffSiteChoice" value="${esc(x.id)}" style="width:auto">${esc(x.name)} — ${esc(x.code||"")}</label>`).join("");
  p.innerHTML=`<div class="card"><h3>Create Staff Login</h3><div class="notice">Create login details for the employee. Do not reuse passwords.</div>
  <label>Full Name</label><input id="newName">
- <label>Email (login ID)</label><input id="newEmail" type="email">
+ <label>Login User Name (unique)</label><input id="newUsername" autocomplete="off" placeholder="Example: rakshit01"><small class="muted">Use a unique name without spaces; spaces will be converted to dots.</small>
  <label>Temporary Password (minimum 6 characters)</label><input id="newPass" type="password">
  <label>Role</label><select id="newRole"><option>Manager</option><option>Operating Officer</option><option>Site In-charge</option><option>Supervisor</option><option>Security Guard</option></select>
  <label>Designation / Staff Type</label><select id="newDesignation"><option>Security Guard</option><option>Supervisor</option><option>Site In-charge</option><option>Field Officer</option><option>Other</option></select>
@@ -281,28 +283,30 @@ async function staffForm(p){
  <div class="card"><h3>Staff Accounts</h3><div id="staffList">Loading staff…</div></div>`;
  const userSnap=await db.ref("users").once("value"),userMap=userSnap.val()||{};
  const staff=Object.entries(userMap).filter(([uid,u])=>u&&u.role&&u.role!=="Admin");
- const staffOpts='<option value="">Choose staff</option>'+staff.map(([uid,u])=>`<option value="${esc(uid)}">${esc(u.name||u.email||uid)} (${esc(u.role)})</option>`).join("");
+ const staffOpts='<option value="">Choose staff</option>'+staff.map(([uid,u])=>`<option value="${esc(uid)}">${esc(u.name||u.username||uid)} (${esc(u.role)})</option>`).join("");
  $("assignStaff").innerHTML=staffOpts;$("historyStaff").innerHTML=staffOpts;
  $("siteSearchCreate").oninput=()=>{let q=$("siteSearchCreate").value.toLowerCase();document.querySelectorAll("#staffSiteChoices label").forEach(l=>l.style.display=l.textContent.toLowerCase().includes(q)?"flex":"none")};
- $("siteSearchAssign").oninput=()=>{let q=$("siteSearchAssign").value.toLowerCase();[...$("assignSite").options].forEach((o,i)=>{if(i)o.hidden=!o.text.toLowerCase().includes(q)})};
+ $("siteSearchAssign").oninput=()=>{let q=$("siteSearchAssign").value.toLowerCase();document.querySelectorAll(".assignSiteChoiceRow").forEach(row=>row.style.display=row.textContent.toLowerCase().includes(q)?"flex":"none")};
  $("createStaff").onclick=async()=>{
-  let name=$("newName").value.trim(),email=$("newEmail").value.trim(),pass=$("newPass").value,role=$("newRole").value,designation=$("newDesignation").value;
+  let name=$("newName").value.trim(),username=normalizeStaffUsername($("newUsername").value),email=staffLoginEmail(username),pass=$("newPass").value,role=$("newRole").value,designation=$("newDesignation").value;
   let assignedSites=[...document.querySelectorAll(".staffSiteChoice:checked")].map(x=>x.value),initialStart=$("newDutyStart").value;
-  if(!name||!email||pass.length<6)return $("staffMsg").textContent="Enter name, valid email and password of at least 6 characters.";
+  if(!name||!username||username.length<3||pass.length<6)return $("staffMsg").textContent="Enter full name, a unique User Name (at least 3 characters) and password of at least 6 characters.";
+  const existingUsers=(await db.ref("users").once("value")).val()||{};
+  if(Object.values(existingUsers).some(u=>u&&normalizeStaffUsername(u.username||"")===username))return $("staffMsg").textContent="This User Name is already taken. Please choose another.";
   try{
    let secondary;try{secondary=firebase.app("staffCreator")}catch(_){secondary=firebase.initializeApp(firebaseConfig,"staffCreator")}
    const cred=await secondary.auth().createUserWithEmailAndPassword(email,pass);
-   await db.ref("users/"+cred.user.uid).set({name,email,role,designation,dailyWage:Number($("newDailyWage").value||0),assignedSites,siteId:assignedSites[0]||null,createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:currentUser.uid});
+   await db.ref("users/"+cred.user.uid).set({name,username,email,role,designation,dailyWage:Number($("newDailyWage").value||0),assignedSites,siteId:assignedSites[0]||null,createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:currentUser.uid});
    if(assignedSites.length){const h={};assignedSites.forEach(siteId=>{const ref=db.ref("dutyAssignments/"+cred.user.uid).push();h[ref.key]={siteId,startDate:initialStart||new Date().toISOString().slice(0,10),endDate:"",active:true,assignedBy:currentUser.uid,assignedAt:firebase.database.ServerValue.TIMESTAMP}});await db.ref("dutyAssignments/"+cred.user.uid).update(h)}
    await secondary.auth().signOut();await secondary.delete();
    $("staffMsg").textContent="Staff login created successfully.";
-   ["newName","newEmail","newPass","newDutyStart","newDailyWage"].forEach(id=>$(id).value="");document.querySelectorAll(".staffSiteChoice").forEach(x=>x.checked=false);
+   ["newName","newUsername","newPass","newDutyStart","newDailyWage"].forEach(id=>$(id).value="");document.querySelectorAll(".staffSiteChoice").forEach(x=>x.checked=false);
    await refreshStaffSelectors();await loadStaffList();
   }catch(e){$("staffMsg").textContent=niceError(e);try{await firebase.app("staffCreator").delete()}catch(_){}}
  };
  async function refreshStaffSelectors(){
   const snap=await db.ref("users").once("value"),u=snap.val()||{};
-  const opts='<option value="">Choose staff</option>'+Object.entries(u).filter(([id,x])=>x&&x.role&&x.role!=="Admin").map(([id,x])=>`<option value="${esc(id)}">${esc(x.name||x.email||id)} (${esc(x.role)})</option>`).join("");
+  const opts='<option value="">Choose staff</option>'+Object.entries(u).filter(([id,x])=>x&&x.role&&x.role!=="Admin").map(([id,x])=>`<option value="${esc(id)}">${esc(x.name||x.username||id)} (${esc(x.role)})</option>`).join("");
   $("assignStaff").innerHTML=opts;$("historyStaff").innerHTML=opts;
  }
  $("saveAssignment").onclick=async()=>{
